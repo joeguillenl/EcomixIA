@@ -1,0 +1,26 @@
+﻿@model EcomixIA.Models.Mezcla
+@{
+    ViewBag.Title = "Eliminar mezcla";
+}
+
+<h1 class="h3 mb-3">Eliminar mezcla</h1>
+
+<div class="alert alert-danger">
+    ¿Seguro que quieres eliminar esta mezcla y sus materiales asociados? Esta acción no se puede deshacer.
+</div>
+
+<dl class="row bg-white rounded-3 border p-4 mb-4">
+    <dt class="col-sm-3">@Html.DisplayNameFor(m => m.Nombre)</dt>
+    <dd class="col-sm-9">@Model.Nombre</dd>
+    <dt class="col-sm-3">@Html.DisplayNameFor(m => m.ResistenciaMPa)</dt>
+    <dd class="col-sm-9">@Model.ResistenciaMPa.ToString("0.0")</dd>
+</dl>
+
+@using (Html.BeginForm("Delete", "Mezclas", new { id = Model.Id }, FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-danger">Eliminar</button>
+        @Html.ActionLink("Cancelar", "Index", null, new { @class = "btn btn-outline-secondary" })
+    </div>
+}

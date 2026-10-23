@@ -1,0 +1,54 @@
+﻿@model IEnumerable<EcomixIA.Models.Mezcla>
+@{
+    ViewBag.Title = "Mezclas";
+}
+
+<div class="page-header">
+    <h1><i class="bi bi-layers"></i> Mezclas</h1>
+    @Html.ActionLink("Nueva mezcla", "Create", null, new { @class = "btn btn-primary" })
+</div>
+
+<div class="table-panel">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>@Html.DisplayNameFor(m => m.Nombre)</th>
+                    <th class="num">@Html.DisplayNameFor(m => m.ResistenciaMPa)</th>
+                    <th class="num">@Html.DisplayNameFor(m => m.EdadDias)</th>
+                    <th class="num">@Html.DisplayNameFor(m => m.RelacionAguaCemento)</th>
+                    <th class="num">@Html.DisplayNameFor(m => m.CostoPorM3)</th>
+                    <th class="num">@Html.DisplayNameFor(m => m.Co2PorM3)</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">@item.Nombre</td>
+                        <td class="num">@item.ResistenciaMPa.ToString("0.0")</td>
+                        <td class="num">@item.EdadDias</td>
+                        <td class="num">@(item.RelacionAguaCemento.HasValue ? item.RelacionAguaCemento.Value.ToString("0.00") : "—")</td>
+                        <td class="num">@item.CostoPorM3.ToString("0.00")</td>
+                        <td class="num">@item.Co2PorM3.ToString("0.0")</td>
+                        <td class="text-end text-nowrap">
+                            @Html.ActionLink("Ver", "Details", new { id = item.Id }, new { @class = "btn btn-sm btn-outline-secondary" })
+                            @Html.ActionLink("Editar", "Edit", new { id = item.Id }, new { @class = "btn btn-sm btn-outline-primary" })
+                            @Html.ActionLink("Eliminar", "Delete", new { id = item.Id }, new { @class = "btn btn-sm btn-outline-danger" })
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state">
+            <i class="bi bi-layers"></i>
+            <p class="mb-2">Todavía no hay mezclas registradas.</p>
+            @Html.ActionLink("Crea la primera", "Create", null, new { @class = "btn btn-sm btn-primary" })
+        </div>
+    }
+</div>

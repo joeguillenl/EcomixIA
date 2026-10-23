@@ -1,0 +1,115 @@
+﻿@model EcomixIA.Models.Mezcla
+@{
+    ViewBag.Title = "Detalles de la mezcla";
+    var materiales = (SelectList)ViewBag.Materiales;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">@Model.Nombre</h1>
+    <div class="d-flex gap-2">
+        @Html.ActionLink("Editar", "Edit", new { id = Model.Id }, new { @class = "btn btn-outline-primary" })
+        @Html.ActionLink("Volver a la lista", "Index", null, new { @class = "btn btn-outline-secondary" })
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <div class="text-secondary small">@Html.DisplayNameFor(m => m.ResistenciaMPa)</div>
+            <div class="fs-4 fw-semibold">@Model.ResistenciaMPa.ToString("0.0")</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <div class="text-secondary small">@Html.DisplayNameFor(m => m.CostoPorM3)</div>
+            <div class="fs-4 fw-semibold">@Model.CostoPorM3.ToString("0.00")</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <div class="text-secondary small">@Html.DisplayNameFor(m => m.Co2PorM3)</div>
+            <div class="fs-4 fw-semibold">@Model.Co2PorM3.ToString("0.0")</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <div class="text-secondary small">@Html.DisplayNameFor(m => m.MasaTotalPorM3)</div>
+            <div class="fs-4 fw-semibold">@Model.MasaTotalPorM3.ToString("0.0")</div>
+        </div></div>
+    </div>
+</div>
+
+<div class="bg-white rounded-3 border p-4 mb-4">
+    <h2 class="h5">Parámetros de diseño</h2>
+    <dl class="row mb-0">
+        <dt class="col-sm-3">@Html.DisplayNameFor(m => m.EdadDias)</dt>
+        <dd class="col-sm-9">@Model.EdadDias</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(m => m.RelacionAguaCemento)</dt>
+        <dd class="col-sm-9">@(Model.RelacionAguaCemento.HasValue ? Model.RelacionAguaCemento.Value.ToString("0.00") : "—")</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(m => m.AsentamientoCm)</dt>
+        <dd class="col-sm-9">@(Model.AsentamientoCm.HasValue ? Model.AsentamientoCm.Value.ToString("0.0") + " cm" : "—")</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(m => m.Notas)</dt>
+        <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.Notas) ? "—" : Model.Notas)</dd>
+    </dl>
+</div>
+
+<div class="bg-white rounded-3 border p-4 mb-4">
+    <h2 class="h5">Materiales por m³</h2>
+    <div class="table-responsive">
+        <table class="table align-middle mb-3">
+            <thead class="table-light">
+                <tr>
+                    <th>Material</th>
+                    <th>Tipo</th>
+                    <th class="text-end">Cantidad (kg/m³)</th>
+                    <th class="text-end">Costo por m³</th>
+                    <th class="text-end">CO₂ por m³</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model.Componentes.OrderBy(c => c.Material.Tipo))
+                {
+                    <tr>
+                        <td>@c.Material.Nombre</td>
+                        <td><span class="badge text-bg-secondary">@c.Material.Tipo</span></td>
+                        <td class="text-end">@c.Cantidad.ToString("0.0")</td>
+                        <td class="text-end">@((c.Cantidad * c.Material.CostoPorKg).ToString("0.00"))</td>
+                        <td class="text-end">@((c.Cantidad * c.Material.Co2PorKg).ToString("0.0"))</td>
+                        <td class="text-end">
+                            @using (Html.BeginForm("EliminarComponente", "Mezclas", FormMethod.Post, new { @class = "d-inline" }))
+                            {
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@c.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Quitar</button>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Componentes.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-secondary py-3">Esta mezcla todavía no tiene materiales.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @using (Html.BeginForm("AgregarComponente", "Mezclas", FormMethod.Post, new { @class = "row g-2 align-items-end" }))
+    {
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="mezclaId" value="@Model.Id" />
+        <div class="col-md-6">
+            <label class="form-label" for="MaterialId">Material</label>
+            @Html.DropDownList("MaterialId", materiales, "-- Selecciona --", new { @class = "form-select", id = "MaterialId" })
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" for="Cantidad">Cantidad (kg/m³)</label>
+            <input type="number" step="any" min="0.01" name="Cantidad" id="Cantidad" class="form-control" required />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Agregar</button>
+        </div>
+    }
+</div>

@@ -1,0 +1,50 @@
+﻿@{
+    ViewBag.Title = "Inicio";
+}
+
+<section class="hero">
+    <h1>Diseño de mezclas de concreto</h1>
+    <p>Registra materiales con su costo y emisión de CO₂, arma mezclas por m³ y compáralas en una sola vista.</p>
+    <div class="d-flex flex-wrap gap-2">
+        @Html.ActionLink("Nuevo material", "Create", "Materiales", null, new { @class = "btn btn-light fw-semibold" })
+        @Html.ActionLink("Nueva mezcla", "Create", "Mezclas", null, new { @class = "btn btn-outline-light fw-semibold" })
+    </div>
+</section>
+
+<div class="row g-4 mb-4">
+    <div class="col-sm-6">
+        <div class="panel stat-card">
+            <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
+            <div>
+                <div class="stat-label">Materiales</div>
+                <div class="stat-value">@ViewBag.TotalMateriales</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <div class="panel stat-card">
+            <div class="stat-icon accent"><i class="bi bi-layers"></i></div>
+            <div>
+                <div class="stat-label">Mezclas</div>
+                <div class="stat-value">@ViewBag.TotalMezclas</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="panel panel-body h-100">
+            <h2 class="h5 fw-bold"><i class="bi bi-box-seam text-success me-1"></i> Materiales</h2>
+            <p class="text-secondary">Cemento, adiciones, agregados, agua y aditivos, con su costo y su emisión de CO₂ por kg.</p>
+            @Html.ActionLink("Administrar materiales", "Index", "Materiales", null, new { @class = "btn btn-primary" })
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="panel panel-body h-100">
+            <h2 class="h5 fw-bold"><i class="bi bi-layers text-success me-1"></i> Mezclas</h2>
+            <p class="text-secondary">Dosificaciones por m³ con costo y CO₂ calculados a partir de sus materiales.</p>
+            @Html.ActionLink("Administrar mezclas", "Index", "Mezclas", null, new { @class = "btn btn-primary" })
+        </div>
+    </div>
+</div>

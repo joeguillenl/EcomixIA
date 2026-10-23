@@ -1,0 +1,18 @@
+﻿@model EcomixIA.Models.Material
+@{
+    ViewBag.Title = "Editar material";
+}
+
+<h1 class="h3 mb-3">Editar material</h1>
+
+@using (Html.BeginForm("Edit", "Materiales", FormMethod.Post, new { @class = "bg-white rounded-3 border p-4" }))
+{
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(m => m.Id)
+    @Html.Partial("_Form", Model)
+
+    <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        @Html.ActionLink("Cancelar", "Index", null, new { @class = "btn btn-outline-secondary" })
+    </div>
+}

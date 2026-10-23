@@ -1,0 +1,33 @@
+﻿@model EcomixIA.Models.Material
+@{
+    ViewBag.Title = "Eliminar material";
+}
+
+<h1 class="h3 mb-3">Eliminar material</h1>
+
+@if ((bool)ViewBag.EnUso)
+{
+    <div class="alert alert-warning">
+        Este material forma parte de una o más mezclas. No se puede eliminar hasta quitarlo de esas mezclas.
+    </div>
+}
+else
+{
+    <div class="alert alert-danger">¿Seguro que quieres eliminar este material? Esta acción no se puede deshacer.</div>
+}
+
+<dl class="row bg-white rounded-3 border p-4 mb-4">
+    <dt class="col-sm-3">@Html.DisplayNameFor(m => m.Nombre)</dt>
+    <dd class="col-sm-9">@Model.Nombre</dd>
+    <dt class="col-sm-3">@Html.DisplayNameFor(m => m.Tipo)</dt>
+    <dd class="col-sm-9">@Model.Tipo</dd>
+</dl>
+
+@using (Html.BeginForm("Delete", "Materiales", new { id = Model.Id }, FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-danger" @(((bool)ViewBag.EnUso) ? "disabled" : "")>Eliminar</button>
+        @Html.ActionLink("Cancelar", "Index", null, new { @class = "btn btn-outline-secondary" })
+    </div>
+}

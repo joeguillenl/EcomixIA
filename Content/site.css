@@ -1,0 +1,289 @@
+/* Tema EcoMix IA: encima de Bootstrap 5.3 */
+:root {
+    --ecomix-primary: #1f6f5c;
+    --ecomix-primary-hover: #185a4a;
+    --ecomix-accent: #c8782e;
+    --ecomix-ink: #1d2a26;
+    --ecomix-muted: #5f6f69;
+    --ecomix-surface: #ffffff;
+    --ecomix-canvas: #f3f6f4;
+    --ecomix-border: #dde5e1;
+
+    --bs-primary: var(--ecomix-primary);
+    --bs-primary-rgb: 31, 111, 92;
+    --bs-link-color: var(--ecomix-primary);
+    --bs-link-hover-color: var(--ecomix-primary-hover);
+    --bs-body-font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+body {
+    background: var(--ecomix-canvas);
+    color: var(--ecomix-ink);
+    font-feature-settings: "cv11";
+}
+
+/* Barra superior */
+.ecomix-nav {
+    background: linear-gradient(135deg, #18473c 0%, var(--ecomix-primary) 100%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.ecomix-brand {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.ecomix-brand .bi {
+    color: #f6c48f;
+}
+
+.ecomix-nav .nav-link {
+    color: rgba(255, 255, 255, 0.82);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.9rem;
+    font-weight: 500;
+}
+
+.ecomix-nav .nav-link:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.ecomix-nav .nav-link.active {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.18);
+}
+
+/* Encabezado de página */
+.page-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.page-header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.page-header h1 .bi {
+    color: var(--ecomix-primary);
+    font-size: 1.35rem;
+}
+
+/* Tarjetas */
+.panel {
+    background: var(--ecomix-surface);
+    border: 1px solid var(--ecomix-border);
+    border-radius: 0.9rem;
+    box-shadow: 0 1px 2px rgba(16, 24, 22, 0.04);
+}
+
+.panel-body {
+    padding: 1.5rem;
+}
+
+/* Tarjetas de resumen (inicio y detalle) */
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    height: 100%;
+}
+
+.stat-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.8rem;
+    display: grid;
+    place-items: center;
+    font-size: 1.4rem;
+    background: rgba(31, 111, 92, 0.1);
+    color: var(--ecomix-primary);
+    flex: none;
+}
+
+.stat-icon.accent {
+    background: rgba(200, 120, 46, 0.12);
+    color: var(--ecomix-accent);
+}
+
+.stat-label {
+    color: var(--ecomix-muted);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+}
+
+.stat-value {
+    font-size: 1.9rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+/* Hero del inicio */
+.hero {
+    background: linear-gradient(120deg, #18473c 0%, var(--ecomix-primary) 60%, #2c8a73 100%);
+    color: #ffffff;
+    border-radius: 1rem;
+    padding: 2rem 2.25rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::after {
+    content: "";
+    position: absolute;
+    right: -60px;
+    top: -60px;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.hero h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.hero p {
+    color: rgba(255, 255, 255, 0.85);
+    max-width: 60ch;
+    margin: 0.5rem 0 1.25rem;
+}
+
+/* Tablas */
+.table-panel {
+    background: var(--ecomix-surface);
+    border: 1px solid var(--ecomix-border);
+    border-radius: 0.9rem;
+    overflow: hidden;
+}
+
+.table-panel .table {
+    margin: 0;
+}
+
+.table-panel thead th {
+    background: #f7faf8;
+    color: var(--ecomix-muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    border-bottom: 1px solid var(--ecomix-border);
+    padding: 0.85rem 1rem;
+}
+
+.table-panel tbody td {
+    padding: 0.85rem 1rem;
+    vertical-align: middle;
+}
+
+.table-panel tbody tr:hover {
+    background: #f7faf8;
+}
+
+.num {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+/* Etiquetas de tipo de material */
+.tag {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: #eef3f1;
+    color: var(--ecomix-primary-hover);
+    border: 1px solid #d5e2dc;
+}
+
+/* Estado vacío */
+.empty-state {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: var(--ecomix-muted);
+}
+
+.empty-state .bi {
+    font-size: 2.2rem;
+    color: #a9bdb5;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+/* Botones */
+.btn-primary {
+    --bs-btn-bg: var(--ecomix-primary);
+    --bs-btn-border-color: var(--ecomix-primary);
+    --bs-btn-hover-bg: var(--ecomix-primary-hover);
+    --bs-btn-hover-border-color: var(--ecomix-primary-hover);
+    --bs-btn-active-bg: var(--ecomix-primary-hover);
+    --bs-btn-active-border-color: var(--ecomix-primary-hover);
+    font-weight: 600;
+    border-radius: 0.6rem;
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--ecomix-primary);
+    --bs-btn-border-color: var(--ecomix-primary);
+    --bs-btn-hover-bg: var(--ecomix-primary);
+    --bs-btn-hover-border-color: var(--ecomix-primary);
+    border-radius: 0.6rem;
+}
+
+.btn {
+    border-radius: 0.6rem;
+}
+
+/* Formularios */
+.form-control,
+.form-select {
+    border-color: #cfd9d4;
+    border-radius: 0.55rem;
+    padding: 0.55rem 0.8rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--ecomix-primary);
+    box-shadow: 0 0 0 0.2rem rgba(31, 111, 92, 0.18);
+}
+
+.form-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #34443e;
+}
+
+/* Pie de página */
+.ecomix-footer {
+    color: var(--ecomix-muted);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 1.5rem 0 2rem;
+}
+
+@media (max-width: 575.98px) {
+    .hero {
+        padding: 1.5rem;
+    }
+
+    .hero h1 {
+        font-size: 1.4rem;
+    }
+}

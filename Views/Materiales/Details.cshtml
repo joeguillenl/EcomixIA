@@ -1,0 +1,28 @@
+﻿@model EcomixIA.Models.Material
+@{
+    ViewBag.Title = "Detalles del material";
+}
+
+<h1 class="h3 mb-3">@Model.Nombre</h1>
+
+<dl class="row bg-white rounded-3 border p-4 mb-4">
+    <dt class="col-sm-3">@Html.DisplayNameFor(m => m.Tipo)</dt>
+    <dd class="col-sm-9">@Model.Tipo</dd>
+
+    <dt class="col-sm-3">@Html.DisplayNameFor(m => m.DensidadRelativa)</dt>
+    <dd class="col-sm-9">@(Model.DensidadRelativa.HasValue ? Model.DensidadRelativa.Value.ToString("0.00") : "—")</dd>
+
+    <dt class="col-sm-3">@Html.DisplayNameFor(m => m.CostoPorKg)</dt>
+    <dd class="col-sm-9">@Model.CostoPorKg.ToString("0.000")</dd>
+
+    <dt class="col-sm-3">@Html.DisplayNameFor(m => m.Co2PorKg)</dt>
+    <dd class="col-sm-9">@Model.Co2PorKg.ToString("0.000")</dd>
+
+    <dt class="col-sm-3">@Html.DisplayNameFor(m => m.Notas)</dt>
+    <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.Notas) ? "—" : Model.Notas)</dd>
+</dl>
+
+<div class="d-flex gap-2">
+    @Html.ActionLink("Editar", "Edit", new { id = Model.Id }, new { @class = "btn btn-primary" })
+    @Html.ActionLink("Volver a la lista", "Index", null, new { @class = "btn btn-outline-secondary" })
+</div>

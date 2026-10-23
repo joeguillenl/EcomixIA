@@ -1,0 +1,36 @@
+﻿@model EcomixIA.Models.Material
+
+@Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+<div class="row g-3">
+    <div class="col-md-6">
+        @Html.LabelFor(m => m.Nombre, htmlAttributes: new { @class = "form-label" })
+        @Html.EditorFor(m => m.Nombre, new { htmlAttributes = new { @class = "form-control" } })
+        @Html.ValidationMessageFor(m => m.Nombre, "", new { @class = "text-danger small" })
+    </div>
+    <div class="col-md-6">
+        @Html.LabelFor(m => m.Tipo, htmlAttributes: new { @class = "form-label" })
+        @Html.DropDownListFor(m => m.Tipo, (SelectList)ViewBag.Tipos, "-- Selecciona --", new { @class = "form-select" })
+        @Html.ValidationMessageFor(m => m.Tipo, "", new { @class = "text-danger small" })
+    </div>
+    <div class="col-md-4">
+        @Html.LabelFor(m => m.DensidadRelativa, htmlAttributes: new { @class = "form-label" })
+        @Html.EditorFor(m => m.DensidadRelativa, new { htmlAttributes = new { @class = "form-control", step = "any" } })
+        @Html.ValidationMessageFor(m => m.DensidadRelativa, "", new { @class = "text-danger small" })
+    </div>
+    <div class="col-md-4">
+        @Html.LabelFor(m => m.CostoPorKg, htmlAttributes: new { @class = "form-label" })
+        @Html.EditorFor(m => m.CostoPorKg, new { htmlAttributes = new { @class = "form-control", step = "any" } })
+        @Html.ValidationMessageFor(m => m.CostoPorKg, "", new { @class = "text-danger small" })
+    </div>
+    <div class="col-md-4">
+        @Html.LabelFor(m => m.Co2PorKg, htmlAttributes: new { @class = "form-label" })
+        @Html.EditorFor(m => m.Co2PorKg, new { htmlAttributes = new { @class = "form-control", step = "any" } })
+        @Html.ValidationMessageFor(m => m.Co2PorKg, "", new { @class = "text-danger small" })
+    </div>
+    <div class="col-12">
+        @Html.LabelFor(m => m.Notas, htmlAttributes: new { @class = "form-label" })
+        @Html.TextAreaFor(m => m.Notas, new { @class = "form-control", rows = 3 })
+        @Html.ValidationMessageFor(m => m.Notas, "", new { @class = "text-danger small" })
+    </div>
+</div>

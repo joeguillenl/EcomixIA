@@ -1,0 +1,17 @@
+﻿@model EcomixIA.Models.Material
+@{
+    ViewBag.Title = "Nuevo material";
+}
+
+<h1 class="h3 mb-3">Nuevo material</h1>
+
+@using (Html.BeginForm("Create", "Materiales", FormMethod.Post, new { @class = "bg-white rounded-3 border p-4" }))
+{
+    @Html.AntiForgeryToken()
+    @Html.Partial("_Form", Model)
+
+    <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        @Html.ActionLink("Cancelar", "Index", null, new { @class = "btn btn-outline-secondary" })
+    </div>
+}

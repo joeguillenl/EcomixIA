@@ -1,0 +1,18 @@
+﻿@model EcomixIA.Models.Mezcla
+@{
+    ViewBag.Title = "Editar mezcla";
+}
+
+<h1 class="h3 mb-3">Editar mezcla</h1>
+
+@using (Html.BeginForm("Edit", "Mezclas", FormMethod.Post, new { @class = "bg-white rounded-3 border p-4" }))
+{
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(m => m.Id)
+    @Html.Partial("_Form", Model)
+
+    <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        @Html.ActionLink("Cancelar", "Details", new { id = Model.Id }, new { @class = "btn btn-outline-secondary" })
+    </div>
+}
