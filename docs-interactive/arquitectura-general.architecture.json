@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "EcoMix IA - Arquitectura General del Sistema",
+    "locale": "es",
+    "output": "docs-interactive/arquitectura-general.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "Ingeniero / Usuario",
+      "sublabel": "Navegador Web",
+      "pos": [40, 240],
+      "size": [140, 60],
+      "icon": "person"
+    },
+    {
+      "id": "ui_views",
+      "type": "frontend",
+      "label": "Vistas Razor (.cshtml)",
+      "sublabel": "Bootstrap 5 + site.css",
+      "pos": [220, 240],
+      "size": [150, 60],
+      "tag": "Implementado",
+      "icon": "frontend"
+    },
+    {
+      "id": "mvc_routing",
+      "type": "backend",
+      "label": "ASP.NET Routing",
+      "sublabel": "RouteConfig / Global.asax",
+      "pos": [410, 240],
+      "size": [150, 60],
+      "tag": "Implementado",
+      "icon": "backend"
+    },
+    {
+      "id": "ctrl_home",
+      "type": "backend",
+      "label": "HomeController",
+      "sublabel": "Dashboard & Contadores",
+      "pos": [600, 120],
+      "size": [160, 60],
+      "tag": "Implementado"
+    },
+    {
+      "id": "ctrl_materiales",
+      "type": "backend",
+      "label": "MaterialesController",
+      "sublabel": "CRUD y Catálogo",
+      "pos": [600, 240],
+      "size": [160, 60],
+      "tag": "Implementado"
+    },
+    {
+      "id": "ctrl_mezclas",
+      "type": "backend",
+      "label": "MezclasController",
+      "sublabel": "Dosificación kg/m³",
+      "pos": [600, 360],
+      "size": [160, 60],
+      "tag": "Implementado"
+    },
+    {
+      "id": "domain_models",
+      "type": "backend",
+      "label": "Modelos de Dominio",
+      "sublabel": "Material, Mezcla, Componente",
+      "pos": [800, 240],
+      "size": [160, 60],
+      "tag": "Implementado"
+    },
+    {
+      "id": "calc_engine",
+      "type": "backend",
+      "label": "Cálculo Sostenibilidad",
+      "sublabel": "Costo/m³, CO₂/m³, Masa",
+      "pos": [800, 360],
+      "size": [160, 60],
+      "tag": "Implementado"
+    },
+    {
+      "id": "ef_context",
+      "type": "database",
+      "label": "EcomixContext (EF 6)",
+      "sublabel": "DbContext Code-First",
+      "pos": [1000, 240],
+      "size": [160, 60],
+      "tag": "Implementado",
+      "icon": "database"
+    },
+    {
+      "id": "sql_server",
+      "type": "database",
+      "label": "SQL Server (EcomixIA)",
+      "sublabel": "Instancia .\\SQLEXPRESS",
+      "pos": [1220, 240],
+      "size": [160, 60],
+      "tag": "No verificado",
+      "icon": "database"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Servidor de Aplicación ASP.NET MVC 5 (.NET 4.7.2)",
+      "wraps": ["mvc_routing", "ctrl_home", "ctrl_materiales", "ctrl_mezclas", "domain_models", "calc_engine", "ef_context"]
+    },
+    {
+      "kind": "security-group",
+      "label": "Persistencia Relacional Local",
+      "wraps": ["sql_server"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "user",
+      "to": "ui_views",
+      "label": "Navegación Web",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c2",
+      "from": "ui_views",
+      "to": "mvc_routing",
+      "label": "HTTP Requests"
+    },
+    {
+      "id": "c3",
+      "from": "mvc_routing",
+      "to": "ctrl_home",
+      "label": "/Home/Index"
+    },
+    {
+      "id": "c4",
+      "from": "mvc_routing",
+      "to": "ctrl_materiales",
+      "label": "/Materiales/*"
+    },
+    {
+      "id": "c5",
+      "from": "mvc_routing",
+      "to": "ctrl_mezclas",
+      "label": "/Mezclas/*"
+    },
+    {
+      "id": "c6",
+      "from": "ctrl_materiales",
+      "to": "domain_models",
+      "label": "CRUD Material"
+    },
+    {
+      "id": "c7",
+      "from": "ctrl_mezclas",
+      "to": "domain_models",
+      "label": "Dosificación"
+    },
+    {
+      "id": "c8",
+      "from": "ctrl_mezclas",
+      "to": "calc_engine",
+      "label": "Invoca KPIs"
+    },
+    {
+      "id": "c9",
+      "from": "domain_models",
+      "to": "ef_context",
+      "label": "Mapeo ORM"
+    },
+    {
+      "id": "c10",
+      "from": "ef_context",
+      "to": "sql_server",
+      "label": "ADO.NET SQL",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Módulos Implementados",
+      "items": [
+        "Vistas Razor con Bootstrap 5, diseño moderno y validación en cliente.",
+        "Controladores MVC para la gestión de insumos y parametrización de mezclas.",
+        "Cálculo dinámico en memoria de costo y huella de CO₂ por m³ dosificado.",
+        "Contexto Entity Framework 6 con mapeo Code-First y Data Annotations."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Configurado pero No Verificado",
+      "items": [
+        "Cadena de conexión DefaultConnection configurada hacia .\\SQLEXPRESS.",
+        "Script DatosEjemplo.sql con 10 materiales y 6 mezclas listo para poblar la BD."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Propuestas para Futuras Fases",
+      "items": [
+        "Proyecto separado EcoMix-IA-AzureML para inferencia de resistencia f'c.",
+        "Algoritmo de optimización de dosificación para minimizar costo y emisiones."
+      ]
+    }
+  ]
+}

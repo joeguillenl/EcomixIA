@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoMix IA · Documentación Técnica Interactiva</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #0b0f17;
+            --bg-surface: #111827;
+            --bg-surface-elevated: #1a2333;
+            --border-color: #243042;
+            --border-hover: #3b82f6;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-green: #10b981;
+            --accent-green-bg: rgba(16, 185, 129, 0.12);
+            --accent-blue: #38bdf8;
+            --accent-blue-bg: rgba(56, 189, 248, 0.12);
+            --accent-amber: #f59e0b;
+            --accent-amber-bg: rgba(245, 158, 11, 0.12);
+            --accent-rose: #f43f5e;
+            --accent-rose-bg: rgba(244, 63, 94, 0.12);
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-xl: 18px;
+            --shadow-subtle: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+        }
+
+        [data-theme="light"] {
+            --bg-body: #f8fafc;
+            --bg-surface: #ffffff;
+            --bg-surface-elevated: #f1f5f9;
+            --border-color: #e2e8f0;
+            --border-hover: #2563eb;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --accent-green: #059669;
+            --accent-green-bg: rgba(5, 150, 105, 0.1);
+            --accent-blue: #0284c7;
+            --accent-blue-bg: rgba(2, 132, 199, 0.1);
+            --accent-amber: #d97706;
+            --accent-amber-bg: rgba(217, 119, 6, 0.1);
+            --accent-rose: #e11d48;
+            --accent-rose-bg: rgba(225, 29, 72, 0.1);
+            --shadow-subtle: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.25s ease, color 0.25s ease;
+        }
+
+        /* Top Header */
+        header.portal-header {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(12px);
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        }
+
+        .brand-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #10b981 0%, #0284c7 100%);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.35rem;
+            box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+        }
+
+        .brand-text h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .brand-text p {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.65rem;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .badge-green { background-color: var(--accent-green-bg); color: var(--accent-green); }
+        .badge-blue { background-color: var(--accent-blue-bg); color: var(--accent-blue); }
+        .badge-amber { background-color: var(--accent-amber-bg); color: var(--accent-amber); }
+        .badge-rose { background-color: var(--accent-rose-bg); color: var(--accent-rose); }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.45rem 0.85rem;
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-surface-elevated);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            border-color: var(--border-hover);
+            background-color: var(--border-color);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-green);
+            color: white;
+            border-color: var(--accent-green);
+        }
+
+        .btn-primary:hover {
+            background-color: #059669;
+            border-color: #059669;
+        }
+
+        /* Nav Tabs Bar */
+        .portal-nav {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.5rem 1.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border: 1px solid transparent;
+            background: transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            color: var(--text-primary);
+            background-color: var(--bg-surface-elevated);
+        }
+
+        .nav-tab.active {
+            color: var(--text-primary);
+            background-color: var(--bg-surface-elevated);
+            border-color: var(--border-color);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .nav-tab.active .tab-indicator {
+            background-color: var(--accent-green);
+        }
+
+        .tab-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: transparent;
+            transition: background-color 0.2s;
+        }
+
+        /* Main Workspace Layout */
+        main.portal-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 1.25rem 1.75rem;
+            gap: 1.25rem;
+        }
+
+        /* Active Diagram Bar */
+        .diagram-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 0.85rem 1.25rem;
+        }
+
+        .diagram-info {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            flex-wrap: wrap;
+        }
+
+        .diagram-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+        }
+
+        .diagram-desc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        .diagram-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        /* Viewer Container */
+        .viewer-card {
+            flex: 1;
+            min-height: 640px;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-subtle);
+            position: relative;
+        }
+
+        .viewer-card iframe {
+            width: 100%;
+            height: 100%;
+            flex: 1;
+            min-height: 640px;
+            border: none;
+            background-color: transparent;
+        }
+
+        /* Cards and Legend Section */
+        .portal-drawer {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .drawer-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .drawer-card h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .legend-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            font-size: 0.84rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.65rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-top: 5px;
+            flex-shrink: 0;
+        }
+
+        .dot-green { background-color: var(--accent-green); }
+        .dot-amber { background-color: var(--accent-amber); }
+        .dot-rose { background-color: var(--accent-rose); }
+        .dot-blue { background-color: var(--accent-blue); }
+
+        .code-pill {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            background-color: var(--bg-surface-elevated);
+            padding: 0.15rem 0.35rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Footer */
+        footer.portal-footer {
+            background-color: var(--bg-surface);
+            border-top: 1px solid var(--border-color);
+            padding: 1rem 1.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header.portal-header {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 1rem;
+            }
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .portal-nav {
+                padding: 0.5rem 1rem;
+            }
+            main.portal-main {
+                padding: 1rem;
+            }
+            .viewer-card {
+                min-height: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Principal -->
+    <header class="portal-header">
+        <div class="header-brand">
+            <div class="brand-icon">
+                <i class="bi bi-diagram-3-fill"></i>
+            </div>
+            <div class="brand-text">
+                <h1>EcoMix IA <span class="badge badge-green"><i class="bi bi-leaf-fill"></i> Concreto Sostenible</span></h1>
+                <p>Portal de Arquitectura y Documentación Técnica Interactiva · Archify 3.2</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <span class="badge badge-blue"><i class="bi bi-code-slash"></i> ASP.NET MVC 5</span>
+            <span class="badge badge-amber"><i class="bi bi-database"></i> Entity Framework 6</span>
+            <button class="btn" id="btnThemeToggle" title="Cambiar tema claro/oscuro">
+                <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+                <span id="themeText">Modo Claro</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Barra de Navegación de Diagramas -->
+    <nav class="portal-nav" role="tablist">
+        <button class="nav-tab active" data-diagram="arquitectura" role="tab">
+            <span class="tab-indicator"></span>
+            <i class="bi bi-bounding-box-circles"></i> Arquitectura General
+        </button>
+        <button class="nav-tab" data-diagram="flujo" role="tab">
+            <span class="tab-indicator"></span>
+            <i class="bi bi-arrow-repeat"></i> Flujo de Registro y Mezclas
+        </button>
+        <button class="nav-tab" data-diagram="azure" role="tab">
+            <span class="tab-indicator"></span>
+            <i class="bi bi-cloud-arrow-up-fill"></i> Integración Azure ML (Propuesta)
+        </button>
+        <button class="nav-tab" data-diagram="erd" role="tab">
+            <span class="tab-indicator"></span>
+            <i class="bi bi-table"></i> Modelo Entidad-Relación
+        </button>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <main class="portal-main">
+
+        <!-- Barra informativa del diagrama activo -->
+        <div class="diagram-toolbar">
+            <div class="diagram-info">
+                <span class="diagram-title" id="diagramTitle">EcoMix IA - Arquitectura General del Sistema</span>
+                <span class="badge badge-green" id="diagramStatusPill"><i class="bi bi-check-circle-fill"></i> Implementado en Core</span>
+                <span class="diagram-desc" id="diagramDesc">Mapeo de capas: Vistas Razor, Controladores MVC, Dominio y Persistencia EF6.</span>
+            </div>
+            <div class="diagram-actions">
+                <a href="arquitectura-general.html" target="_blank" class="btn" id="btnOpenStandalone">
+                    <i class="bi bi-box-arrow-up-right"></i> Abrir en Pestaña Nueva
+                </a>
+                <a href="arquitectura-general.architecture.json" target="_blank" class="btn" id="btnDownloadSource" download>
+                    <i class="bi bi-file-earmark-code"></i> Fuente JSON
+                </a>
+            </div>
+        </div>
+
+        <!-- Visor Embebido Interactivo -->
+        <div class="viewer-card">
+            <iframe id="diagramFrame" src="arquitectura-general.html" title="Diagrama Interactivo"></iframe>
+        </div>
+
+        <!-- Secciones de Información y Leyendas -->
+        <section class="portal-drawer">
+            <!-- Leyenda Semántica -->
+            <div class="drawer-card">
+                <h3><i class="bi bi-palette-fill text-primary"></i> Convención Semántica de Estado</h3>
+                <ul class="legend-list">
+                    <li class="legend-item">
+                        <span class="legend-dot dot-green"></span>
+                        <div>
+                            <strong style="color: var(--accent-green);">Implementado y Funcional:</strong> Controladores C# (<code class="code-pill">MaterialesController</code>, <code class="code-pill">MezclasController</code>), Vistas Razor con Bootstrap 5, lógica de cálculo de sostenibilidad en memoria y contexto EF6.
+                        </div>
+                    </li>
+                    <li class="legend-item">
+                        <span class="legend-dot dot-amber"></span>
+                        <div>
+                            <strong style="color: var(--accent-amber);">Configurado / No Verificado:</strong> Instancia relacional SQL Server (<code class="code-pill">.\SQLEXPRESS</code>) y script idempotente de carga <code class="code-pill">DatosEjemplo.sql</code>.
+                        </div>
+                    </li>
+                    <li class="legend-item">
+                        <span class="legend-dot dot-rose"></span>
+                        <div>
+                            <strong style="color: var(--accent-rose);">Propuesta Futura (No Implementada):</strong> Repositorio <code class="code-pill">EcoMix-IA-AzureML</code>, endpoints de inferencia en Azure ML y servicio C# <code class="code-pill">AzureMLPredictionService</code>.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Contexto Técnico del Concreto Ecológico -->
+            <div class="drawer-card">
+                <h3><i class="bi bi-calculator-fill text-success"></i> Indicadores de Sostenibilidad</h3>
+                <p style="font-size: 0.84rem; color: var(--text-secondary);">
+                    El diseño de mezclas de concreto ecológico equilibra la resistencia mecánica de diseño (<code class="code-pill">f'c en MPa</code>) a 28 días con la minimización de impacto ambiental:
+                </p>
+                <ul class="legend-list">
+                    <li class="legend-item">
+                        <span class="legend-dot dot-blue"></span>
+                        <div>
+                            <strong>Costo por m³ ($/m³):</strong> Sumatoria de <code class="code-pill">Cantidad × CostoPorKg</code> de cada material constituyente.
+                        </div>
+                    </li>
+                    <li class="legend-item">
+                        <span class="legend-dot dot-green"></span>
+                        <div>
+                            <strong>Emisión de CO₂ (kg/m³):</strong> Sumatoria de <code class="code-pill">Cantidad × Co2PorKg</code> evaluando la sustitución con puzolanas, escorias o ceniza volante.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Interacciones Archify -->
+            <div class="drawer-card">
+                <h3><i class="bi bi-hand-index-thumb-fill text-warning"></i> Controles del Visor Archify</h3>
+                <p style="font-size: 0.84rem; color: var(--text-secondary);">
+                    Cada diagrama es un artefacto HTML autónomo con capacidades avanzadas de inspección:
+                </p>
+                <ul class="legend-list">
+                    <li class="legend-item">
+                        <i class="bi bi-zoom-in" style="margin-top: 3px;"></i>
+                        <div><strong>Zoom y Panorámica:</strong> Rueda del ratón para escalar y arrastre para desplazar el lienzo interactivo.</div>
+                    </li>
+                    <li class="legend-item">
+                        <i class="bi bi-cursor-fill" style="margin-top: 3px;"></i>
+                        <div><strong>Trazado de Rutas:</strong> Haz clic en cualquier nodo para resaltar sus dependencias y conexiones asociadas.</div>
+                    </li>
+                    <li class="legend-item">
+                        <i class="bi bi-play-circle-fill" style="margin-top: 3px;"></i>
+                        <div><strong>Botón Live / Still:</strong> Alterna entre animación de flujo y vista estática de ingeniería.</div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="portal-footer">
+        <div>
+            <strong>EcoMix IA</strong> · Sistema de Diseño de Mezclas de Concreto Ecológico
+        </div>
+        <div>
+            Documentación generada con <a href="https://github.com/tt-a1i/archify" target="_blank" style="color: var(--accent-blue); text-decoration: none;">Archify 3.2</a> · Totalmente funcional sin SQL Server, IIS ni Azure
+        </div>
+    </footer>
+
+    <!-- Script de Navegación Dinámica -->
+    <script>
+        const diagramsData = {
+            arquitectura: {
+                title: "EcoMix IA - Arquitectura General del Sistema",
+                statusPill: '<i class="bi bi-check-circle-fill"></i> Implementado en Core',
+                statusClass: "badge-green",
+                desc: "Mapeo de capas: Vistas Razor, Controladores MVC, Dominio y Persistencia EF6.",
+                file: "arquitectura-general.html",
+                source: "arquitectura-general.architecture.json"
+            },
+            flujo: {
+                title: "EcoMix IA - Flujo de Registro de Materiales y Creación de Mezclas",
+                statusPill: '<i class="bi bi-check-circle-fill"></i> Flujo Implementado',
+                statusClass: "badge-green",
+                desc: "Proceso interactivo: Catálogo de insumos, parámetros de mezcla, dosificación y cálculo de KPIs.",
+                file: "flujo-registro-mezclas.html",
+                source: "flujo-registro-mezclas.workflow.json"
+            },
+            azure: {
+                title: "EcoMix IA - Integración Propuesta con Azure Machine Learning",
+                statusPill: '<i class="bi bi-clock-history"></i> Propuesta Técnica Futura',
+                statusClass: "badge-rose",
+                desc: "Arquitectura de integración no implementada para el proyecto EcoMix-IA-AzureML e inferencia REST.",
+                file: "integracion-azure-ml.html",
+                source: "integracion-azure-ml.architecture.json"
+            },
+            erd: {
+                title: "EcoMix IA - Modelo Entidad-Relación (SQL Server / EF6)",
+                statusPill: '<i class="bi bi-database-check"></i> Modelo Implementado',
+                statusClass: "badge-blue",
+                desc: "Esquema relacional de Materials, Mezclas y la tabla de unión MezclaComponentes (1:N).",
+                file: "modelo-erd.html",
+                source: "modelo-erd.erd.json"
+            }
+        };
+
+        const tabs = document.querySelectorAll('.nav-tab');
+        const iframe = document.getElementById('diagramFrame');
+        const titleEl = document.getElementById('diagramTitle');
+        const statusEl = document.getElementById('diagramStatusPill');
+        const descEl = document.getElementById('diagramDesc');
+        const btnOpen = document.getElementById('btnOpenStandalone');
+        const btnSource = document.getElementById('btnDownloadSource');
+        const btnTheme = document.getElementById('btnThemeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const themeText = document.getElementById('themeText');
+
+        // Manejo de tabs
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                const key = tab.dataset.diagram;
+                const d = diagramsData[key];
+                if (d) {
+                    iframe.src = d.file;
+                    titleEl.textContent = d.title;
+                    statusEl.innerHTML = d.statusPill;
+                    statusEl.className = 'badge ' + d.statusClass;
+                    descEl.textContent = d.desc;
+                    btnOpen.href = d.file;
+                    btnSource.href = d.source;
+                }
+            });
+        });
+
+        // Manejo de tema Claro / Oscuro
+        btnTheme.addEventListener('click', () => {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            if (currentTheme === 'dark') {
+                html.setAttribute('data-theme', 'light');
+                themeIcon.className = 'bi bi-sun-fill';
+                themeText.textContent = 'Modo Oscuro';
+            } else {
+                html.setAttribute('data-theme', 'dark');
+                themeIcon.className = 'bi bi-moon-stars-fill';
+                themeText.textContent = 'Modo Claro';
+            }
+        });
+    </script>
+</body>
+</html>

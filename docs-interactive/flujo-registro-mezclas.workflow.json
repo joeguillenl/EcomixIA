@@ -1,0 +1,193 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "EcoMix IA - Flujo de Registro de Materiales y Creación de Mezclas",
+    "locale": "es",
+    "output": "docs-interactive/flujo-registro-mezclas.html",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "usuario", "label": "Ingeniero / Usuario" },
+    { "id": "materiales", "label": "Catálogo de Materiales" },
+    { "id": "mezclas", "label": "Gestión de Mezclas" },
+    { "id": "calculo", "label": "Cálculos y Persistencia" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "1. Registro de Insumos", "fromCol": 0, "toCol": 2 },
+    { "id": "p2", "label": "2. Parámetros de Diseño", "fromCol": 3, "toCol": 3 },
+    { "id": "p3", "label": "3. Dosificación y KPIs", "fromCol": 4, "toCol": 5 }
+  ],
+  "mainPath": [
+    "iniciar_material",
+    "valida_material",
+    "guarda_material",
+    "crear_mezcla",
+    "guarda_mezcla",
+    "dosificar_insumo",
+    "valida_componente",
+    "calcula_kpis",
+    "evalua_resultado"
+  ],
+  "nodes": [
+    {
+      "id": "iniciar_material",
+      "lane": "usuario",
+      "col": 0,
+      "type": "external",
+      "label": "Registrar Material",
+      "sublabel": "Costo/kg y CO₂/kg",
+      "icon": "person"
+    },
+    {
+      "id": "valida_material",
+      "lane": "materiales",
+      "col": 1,
+      "type": "security",
+      "label": "Validar Insumo",
+      "sublabel": "ModelState y Tipos",
+      "tag": "Implementado"
+    },
+    {
+      "id": "guarda_material",
+      "lane": "materiales",
+      "col": 2,
+      "type": "database",
+      "label": "Guardar Insumo",
+      "sublabel": "db.Materiales.Add()",
+      "tag": "EF 6"
+    },
+    {
+      "id": "crear_mezcla",
+      "lane": "usuario",
+      "col": 3,
+      "type": "external",
+      "label": "Definir Mezcla",
+      "sublabel": "f'c, a/c, edad, slump",
+      "icon": "person"
+    },
+    {
+      "id": "guarda_mezcla",
+      "lane": "mezclas",
+      "col": 3,
+      "type": "backend",
+      "label": "Guardar Cabecera",
+      "sublabel": "Redirect a Details",
+      "tag": "Implementado"
+    },
+    {
+      "id": "dosificar_insumo",
+      "lane": "usuario",
+      "col": 4,
+      "type": "external",
+      "label": "Dosificar Insumo",
+      "sublabel": "Cantidad en kg/m³",
+      "icon": "person"
+    },
+    {
+      "id": "valida_componente",
+      "lane": "mezclas",
+      "col": 4,
+      "type": "security",
+      "label": "Validar Componente",
+      "sublabel": "Evita duplicados",
+      "tag": "Integridad"
+    },
+    {
+      "id": "calcula_kpis",
+      "lane": "calculo",
+      "col": 5,
+      "type": "backend",
+      "label": "Cálculo de KPIs",
+      "sublabel": "Costo/m³ y CO₂/m³",
+      "tag": "Tiempo Real"
+    },
+    {
+      "id": "evalua_resultado",
+      "lane": "usuario",
+      "col": 5,
+      "type": "external",
+      "label": "Visualizar KPIs",
+      "sublabel": "Tarjetas y Balance",
+      "icon": "success"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "iniciar_material",
+      "to": "valida_material",
+      "label": "POST Create",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "valida_material",
+      "to": "guarda_material",
+      "label": "ModelState válido",
+      "variant": "default"
+    },
+    {
+      "id": "e3",
+      "from": "guarda_material",
+      "to": "crear_mezcla",
+      "label": "Catálogo disponible",
+      "variant": "dashed"
+    },
+    {
+      "id": "e4",
+      "from": "crear_mezcla",
+      "to": "guarda_mezcla",
+      "label": "POST Mezcla",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "guarda_mezcla",
+      "to": "dosificar_insumo",
+      "label": "Abre Details",
+      "variant": "default"
+    },
+    {
+      "id": "e6",
+      "from": "dosificar_insumo",
+      "to": "valida_componente",
+      "label": "AgregarComponente",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e7",
+      "from": "valida_componente",
+      "to": "calcula_kpis",
+      "label": "Inserta y recalcula",
+      "variant": "default"
+    },
+    {
+      "id": "e8",
+      "from": "calcula_kpis",
+      "to": "evalua_resultado",
+      "label": "Renderiza métricas",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Validación y Reglas de Negocio",
+      "items": [
+        "MaterialesController valida los tipos permitidos (Cemento, Adición, Agregados, Agua, Aditivo).",
+        "Control de duplicados en MezclasController para evitar registrar dos veces el mismo insumo en una mezcla.",
+        "Bloqueo de eliminación si un material está asociado a alguna dosificación existente."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Cálculo Dinámico de Sostenibilidad",
+      "items": [
+        "Costo total por m³ calculado sumando (Cantidad * CostoPorKg) de cada componente.",
+        "Emisión de CO₂ por m³ calculada sumando (Cantidad * Co2PorKg) de cada insumo dosificado.",
+        "Masa total por m³ acumulada para control de densidad de la mezcla fresca."
+      ]
+    }
+  ]
+}

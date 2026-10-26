@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "diagram_type": "erd",
+  "meta": {
+    "title": "EcoMix IA - Modelo Entidad-Relación (SQL Server / EF6)",
+    "locale": "es",
+    "output": "docs-interactive/modelo-erd.html",
+    "quality_profile": "showcase"
+  },
+  "layout": {
+    "mode": "grid",
+    "gapY": 38,
+    "gapX": 72
+  },
+  "entities": [
+    {
+      "id": "materials",
+      "label": "Materials",
+      "tag": "insumos",
+      "row": 0,
+      "col": 0,
+      "width": 260,
+      "attributes": [
+        { "name": "Id", "type": "int", "key": "pk" },
+        { "name": "Nombre", "type": "nvarchar(100)" },
+        { "name": "Tipo", "type": "nvarchar(50)" },
+        { "name": "DensidadRelativa", "type": "decimal(18,2)" },
+        { "name": "CostoPorKg", "type": "decimal(18,2)" },
+        { "name": "Co2PorKg", "type": "decimal(18,2)" },
+        { "name": "Notas", "type": "nvarchar(500)" }
+      ]
+    },
+    {
+      "id": "mezcla_componentes",
+      "label": "MezclaComponentes",
+      "tag": "composicion",
+      "row": 0,
+      "col": 1,
+      "width": 260,
+      "attributes": [
+        { "name": "Id", "type": "int", "key": "pk" },
+        { "name": "MezclaId", "type": "int", "key": "fk", "references": "mezclas.Id" },
+        { "name": "MaterialId", "type": "int", "key": "fk", "references": "materials.Id" },
+        { "name": "Cantidad", "type": "decimal(18,2)" }
+      ]
+    },
+    {
+      "id": "mezclas",
+      "label": "Mezclas",
+      "tag": "dosificacion",
+      "row": 0,
+      "col": 2,
+      "width": 270,
+      "attributes": [
+        { "name": "Id", "type": "int", "key": "pk" },
+        { "name": "Nombre", "type": "nvarchar(100)" },
+        { "name": "ResistenciaMPa", "type": "decimal(18,2)" },
+        { "name": "EdadDias", "type": "int" },
+        { "name": "RelacionAguaCemento", "type": "decimal(18,2)" },
+        { "name": "AsentamientoCm", "type": "decimal(18,2)" },
+        { "name": "Notas", "type": "nvarchar(500)" }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "id": "comp_material",
+      "from": "mezcla_componentes",
+      "to": "materials",
+      "label": "material dosificado",
+      "fromCardinality": "many",
+      "toCardinality": "one"
+    },
+    {
+      "id": "comp_mezcla",
+      "from": "mezcla_componentes",
+      "to": "mezclas",
+      "label": "mezcla contenedora",
+      "fromCardinality": "many",
+      "toCardinality": "one"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Estructura y Cardinalidad 1:N",
+      "items": [
+        "MezclaComponentes actúa como tabla de unión entre Mezclas y Materials.",
+        "Una Mezcla posee 1 a N MezclaComponentes (dosificación de insumos por m³).",
+        "Un Material puede estar presente en 0 a N Mezclas a lo largo del catálogo."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Atributos Calculados (NotMapped)",
+      "items": [
+        "CostoPorM3 = Sum(Cantidad * CostoPorKg) calculado en memoria en C#.",
+        "Co2PorM3 = Sum(Cantidad * Co2PorKg) para evaluación de huella ecológica.",
+        "MasaTotalPorM3 = Sum(Cantidad) para control de peso volumétrico."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Mapeo con Entity Framework 6",
+      "items": [
+        "EcomixContext mapea DbSet<Material>, DbSet<Mezcla> y DbSet<MezclaComponente>.",
+        "La eliminación en cascada está restringida en el controlador para evitar huérfanos."
+      ]
+    }
+  ]
+}

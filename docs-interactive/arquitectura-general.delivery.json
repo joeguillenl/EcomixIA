@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "41f0f8aa-780a-44e6-bdd4-552af32b8b68",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "C:\\Users\\Admin\\Desktop\\Proyectos\\ML EcomixIA Sistema\\docs-interactive\\arquitectura-general.architecture.json",
+  "output": "C:\\Users\\Admin\\Desktop\\Proyectos\\ML EcomixIA Sistema\\docs-interactive\\arquitectura-general.html",
+  "specification": {
+    "sha256": "9c1dd4bb150084fb397fd65429b931c36f081cda19f378521a04211795079f7f",
+    "bytes": 5254
+  },
+  "artifact": {
+    "sha256": "334a4ee3b9f566c81838144002e14996d2e0cd1d40c1df703faf03a8bbefb193",
+    "bytes": 855306
+  }
+}

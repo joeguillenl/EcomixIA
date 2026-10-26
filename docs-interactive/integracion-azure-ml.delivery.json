@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "f5d39a97-6e46-4ebe-85bc-c858008b3598",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "C:\\Users\\Admin\\Desktop\\Proyectos\\ML EcomixIA Sistema\\docs-interactive\\integracion-azure-ml.architecture.json",
+  "output": "C:\\Users\\Admin\\Desktop\\Proyectos\\ML EcomixIA Sistema\\docs-interactive\\integracion-azure-ml.html",
+  "specification": {
+    "sha256": "b494017cb1918384c7c4b71e89587f0acfc49a890ecb4893bc0fa74d75722669",
+    "bytes": 5145
+  },
+  "artifact": {
+    "sha256": "8dfcda4eac62f980df349d73ebe94d4a200d3e9c59b92fe73cb680b825417888",
+    "bytes": 851791
+  }
+}

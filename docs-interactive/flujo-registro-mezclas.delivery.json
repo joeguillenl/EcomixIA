@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "2d1e438c-2133-4024-900a-1e5d698851ea",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "C:\\Users\\Admin\\Desktop\\Proyectos\\ML EcomixIA Sistema\\docs-interactive\\flujo-registro-mezclas.workflow.json",
+  "output": "C:\\Users\\Admin\\Desktop\\Proyectos\\ML EcomixIA Sistema\\docs-interactive\\flujo-registro-mezclas.html",
+  "specification": {
+    "sha256": "2e22a7d8ebbb91a01dbb8a1d72c59a454422b62dad3ba8385cf185dbc3ced862",
+    "bytes": 5048
+  },
+  "artifact": {
+    "sha256": "dd70b125a10bd62812b58fbc467bcae7ed756d02c1b161b982b90bfc15dabb92",
+    "bytes": 848639
+  }
+}

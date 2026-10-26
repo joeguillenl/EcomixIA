@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "EcoMix IA - Integración Propuesta con Azure Machine Learning",
+    "locale": "es",
+    "output": "docs-interactive/integracion-azure-ml.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "Ingeniero Civil",
+      "sublabel": "Dosificación Óptima",
+      "pos": [40, 240],
+      "size": [130, 60],
+      "icon": "person"
+    },
+    {
+      "id": "mvc_app",
+      "type": "backend",
+      "label": "EcoMix MVC Core",
+      "sublabel": "ASP.NET MVC 5 (.NET 4.7.2)",
+      "pos": [330, 120],
+      "size": [160, 60],
+      "tag": "Implementado"
+    },
+    {
+      "id": "opt_ui",
+      "type": "frontend",
+      "label": "Módulo Optimización IA",
+      "sublabel": "Vista Razor /Mezclas/Optimizar",
+      "pos": [330, 240],
+      "size": [160, 60],
+      "tag": "Fase Futura",
+      "icon": "frontend"
+    },
+    {
+      "id": "ml_client_service",
+      "type": "backend",
+      "label": "AzureMLPredictionService",
+      "sublabel": "Cliente HTTP / C# Async",
+      "pos": [330, 360],
+      "size": [160, 60],
+      "tag": "Fase Futura"
+    },
+    {
+      "id": "api_gateway",
+      "type": "cloud",
+      "label": "Azure API Management",
+      "sublabel": "HTTPS + Token Auth",
+      "pos": [600, 240],
+      "size": [160, 60],
+      "tag": "Propuesto",
+      "icon": "security"
+    },
+    {
+      "id": "ml_endpoint",
+      "type": "cloud",
+      "label": "Managed Online Endpoint",
+      "sublabel": "Azure ML REST Service",
+      "pos": [810, 240],
+      "size": [160, 60],
+      "tag": "Propuesto",
+      "icon": "cloud"
+    },
+    {
+      "id": "ml_model",
+      "type": "backend",
+      "label": "Modelo Predictivo f'c",
+      "sublabel": "XGBoost / LightGBM",
+      "pos": [1020, 240],
+      "size": [160, 60],
+      "tag": "Propuesto"
+    },
+    {
+      "id": "training_pipeline",
+      "type": "cloud",
+      "label": "Pipeline Entrenamiento",
+      "sublabel": "Azure Automated ML",
+      "pos": [810, 360],
+      "size": [160, 60],
+      "tag": "Propuesto"
+    },
+    {
+      "id": "blob_store",
+      "type": "database",
+      "label": "Azure Blob Storage",
+      "sublabel": "Datasets y Modelos",
+      "pos": [1020, 360],
+      "size": [160, 60],
+      "tag": "Propuesto",
+      "icon": "database"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Aplicación Web Local EcoMix IA",
+      "wraps": ["mvc_app", "opt_ui", "ml_client_service"]
+    },
+    {
+      "kind": "region",
+      "label": "Azure Cloud - Proyecto EcoMix-IA-AzureML (Futuro)",
+      "wraps": ["api_gateway", "ml_endpoint", "ml_model", "training_pipeline", "blob_store"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "user",
+      "to": "opt_ui",
+      "label": "f'c y CO₂ objetivo",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c2",
+      "from": "opt_ui",
+      "to": "mvc_app",
+      "label": "Catálogo local"
+    },
+    {
+      "id": "c3",
+      "from": "opt_ui",
+      "to": "ml_client_service",
+      "label": "Parámetros"
+    },
+    {
+      "id": "c4",
+      "from": "ml_client_service",
+      "to": "api_gateway",
+      "label": "REST POST",
+      "variant": "dashed"
+    },
+    {
+      "id": "c5",
+      "from": "api_gateway",
+      "to": "ml_endpoint",
+      "label": "Bearer Auth",
+      "variant": "dashed"
+    },
+    {
+      "id": "c6",
+      "from": "ml_endpoint",
+      "to": "ml_model",
+      "label": "Score()"
+    },
+    {
+      "id": "c7",
+      "from": "training_pipeline",
+      "to": "ml_model",
+      "label": "Publica modelo",
+      "variant": "dashed"
+    },
+    {
+      "id": "c8",
+      "from": "training_pipeline",
+      "to": "blob_store",
+      "label": "Lee datasets",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Estado: Propuesta Técnica (No Implementada)",
+      "items": [
+        "El proyecto EcoMix-IA-AzureML es un repositorio complementario planificado para fases futuras.",
+        "La aplicación actual no tiene llamadas activas a Azure ni dependencias de nube instaladas.",
+        "El esquema modela la arquitectura que se implementará para conectar ambos entornos."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Capacidades de Machine Learning Previstas",
+      "items": [
+        "Inferencia de resistencia f'c (MPa) a 28 días basada en dosificación y relación agua/cemento.",
+        "Optimización multiobjetivo mediante algoritmos genéticos para minimizar kg CO₂/m³ y costo.",
+        "Entrenamiento automatizado con datos históricos de rotura de probetas de concreto."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Punto de Acoplamiento en ASP.NET MVC",
+      "items": [
+        "Se agregará una interfaz de servicio IMlInferenceService en la capa de servicios.",
+        "HttpClient con políticas de reintento Polly para llamadas resilientes hacia Azure API Management.",
+        "Consumo asíncrono desde vistas Razor para no degradar el tiempo de respuesta del portal."
+      ]
+    }
+  ]
+}

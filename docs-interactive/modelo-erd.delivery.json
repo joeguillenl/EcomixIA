@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "cfe68e7c-4409-4ad0-897d-545668ba3a63",
+  "status": "current",
+  "command": "deliver",
+  "type": "erd",
+  "input": "C:\\Users\\Admin\\Desktop\\Proyectos\\ML EcomixIA Sistema\\docs-interactive\\modelo-erd.erd.json",
+  "output": "C:\\Users\\Admin\\Desktop\\Proyectos\\ML EcomixIA Sistema\\docs-interactive\\modelo-erd.html",
+  "specification": {
+    "sha256": "59f28a449f0c6faa4f9f3a496e7d182c06a4d197554018720360cea3018057dc",
+    "bytes": 3414
+  },
+  "artifact": {
+    "sha256": "42060ec4b142c7d1d390d606ac6c3e684c79e6c73cb7661a7576dc99fecd327f",
+    "bytes": 847720
+  }
+}
