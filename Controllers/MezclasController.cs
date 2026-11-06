@@ -8,6 +8,7 @@ using EcomixIA.Models;
 using EcomixIA.Models.Dtos;
 using EcomixIA.Models.ViewModels;
 using EcomixIA.Services;
+using Newtonsoft.Json;
 
 namespace EcomixIA.Controllers
 {
@@ -240,10 +241,10 @@ namespace EcomixIA.Controllers
             return View(model);
         }
 
-        // POST: Mezclas/SimularAjax (Llamada asíncrona interactiva)
+        // POST: Mezclas/SimularAjax (Llamada asíncrona interactiva con Json.NET)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<JsonResult> SimularAjax(SimuladorDosificacionViewModel model)
+        public async Task<ActionResult> SimularAjax(SimuladorDosificacionViewModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -251,7 +252,7 @@ namespace EcomixIA.Controllers
                     .SelectMany(v => v.Errors)
                     .Select(e => e.ErrorMessage)
                     .ToList();
-                return Json(new { success = false, message = "Formulario con datos inválidos.", errors });
+                return Content(JsonConvert.SerializeObject(new { success = false, message = "Formulario con datos inválidos.", errors }), "application/json");
             }
 
             var request = new ConcretePredictionRequestDto
@@ -271,35 +272,35 @@ namespace EcomixIA.Controllers
                 var response = await _mlClientService.PredictStrengthAsync(request);
                 sw.Stop();
 
-                return Json(new
+                return Content(JsonConvert.SerializeObject(new
                 {
                     success = true,
                     latencyMs = sw.ElapsedMilliseconds,
                     data = response
-                });
+                }), "application/json");
             }
             catch (EcoMixMlClientException ex)
             {
                 sw.Stop();
-                return Json(new
+                return Content(JsonConvert.SerializeObject(new
                 {
                     success = false,
                     latencyMs = sw.ElapsedMilliseconds,
                     statusCode = ex.StatusCode,
                     message = ex.Message,
                     details = ex.ProblemDetails
-                });
+                }), "application/json");
             }
             catch (Exception ex)
             {
                 sw.Stop();
-                return Json(new
+                return Content(JsonConvert.SerializeObject(new
                 {
                     success = false,
                     latencyMs = sw.ElapsedMilliseconds,
                     statusCode = 500,
                     message = "Error inesperado: " + ex.Message
-                });
+                }), "application/json");
             }
         }
 

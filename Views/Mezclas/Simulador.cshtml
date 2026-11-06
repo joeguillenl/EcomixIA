@@ -162,8 +162,8 @@
                 <span class="visually-hidden">Consultando servicio ML...</span>
             </div>
             <h5 class="fw-bold mb-2">Consultando modelo en Azure ML...</h5>
-            <p class="text-secondary small mb-3 max-w-sm">
-                Conectando con <code>ca-ecomix-inference-api</code> en la región Chile Central.
+            <p class="text-secondary small mb-3" style="max-width: 400px;">
+                Conectando de forma segura con <code>ca-ecomix-inference-api</code> en la región Chile Central.
             </p>
             <div class="alert alert-warning py-2 px-3 small border-0 text-start w-100" style="max-width: 420px;">
                 <i class="bi bi-clock-history me-1"></i>
@@ -180,7 +180,7 @@
                 <p id="txtErrorMensaje" class="mb-2 text-danger fw-semibold">@Model.ErrorMensaje</p>
                 <div id="listaErroresCampos" class="@(Model.ErrorDetalle?.InvalidFields?.Any() == true ? "" : "d-none")">
                     <div class="small fw-bold text-secondary mb-1">Detalle de inconsistencias detectadas:</div>
-                    <ul class="small mb-0 text-danger">
+                    <ul class="small mb-0 text-danger" id="ulErroresCampos">
                         @if (Model.ErrorDetalle?.InvalidFields != null)
                         {
                             foreach (var err in Model.ErrorDetalle.InvalidFields)
@@ -324,7 +324,6 @@
 </div>
 
 <script>
-    // Presets de dosificación documentados
     var presets = {
         canonica: {
             cemento: 280.0,
@@ -398,7 +397,6 @@
         document.getElementById('lblSustitucionScm').innerText = scmPct.toFixed(1) + ' %';
     }
 
-    // Intercepción AJAX para experiencia fluida sin parpadeo
     document.addEventListener("DOMContentLoaded", function () {
         calcularTotales();
 
@@ -414,7 +412,6 @@
             var panelPlaceholder = document.getElementById("panelPlaceholder");
             var btnSimular = document.getElementById("btnSimular");
 
-            // Mostrar estado de carga
             panelCarga.classList.remove("d-none");
             panelError.classList.add("d-none");
             panelResultados.classList.add("d-none");
@@ -436,23 +433,38 @@
 
                 if (res.success && res.data) {
                     var d = res.data;
-                    document.getElementById("res7d").innerText = d.predictions.strength_7d_mpa.toFixed(2);
-                    document.getElementById("res28d").innerText = d.predictions.strength_28d_mpa.toFixed(2);
-                    document.getElementById("ratioAc").innerText = d.mix_ratios.water_cement_ratio.toFixed(4);
-                    document.getElementById("ratioAb").innerText = d.mix_ratios.water_binder_ratio.toFixed(4);
-                    document.getElementById("ratioCementante").innerText = d.mix_ratios.total_cementitious_content_kg_m3.toFixed(1) + " kg/m³";
-                    document.getElementById("ratioScm").innerText = d.mix_ratios.scm_replacement_percentage.toFixed(2) + " %";
-                    document.getElementById("ratioMasa").innerText = d.mix_ratios.total_mass_kg_m3.toFixed(1) + " kg/m³";
-                    document.getElementById("badgeLatencia").innerText = res.latencyMs + " ms";
+
+                    // Predicciones (soporte snake_case y PascalCase)
+                    var pred = d.predictions || d.Predictions || {};
+                    var p7 = pred.strength_7d_mpa !== undefined ? pred.strength_7d_mpa : (pred.Strength7dMpa !== undefined ? pred.Strength7dMpa : 0);
+                    var p28 = pred.strength_28d_mpa !== undefined ? pred.strength_28d_mpa : (pred.Strength28dMpa !== undefined ? pred.Strength28dMpa : 0);
+
+                    document.getElementById("res7d").innerText = Number(p7).toFixed(2);
+                    document.getElementById("res28d").innerText = Number(p28).toFixed(2);
+
+                    // Ratios
+                    var ratios = d.mix_ratios || d.MixRatios || {};
+                    var w_c = ratios.water_cement_ratio !== undefined ? ratios.water_cement_ratio : (ratios.WaterCementRatio !== undefined ? ratios.WaterCementRatio : 0);
+                    var w_b = ratios.water_binder_ratio !== undefined ? ratios.water_binder_ratio : (ratios.WaterBinderRatio !== undefined ? ratios.WaterBinderRatio : 0);
+                    var totalCement = ratios.total_cementitious_content_kg_m3 !== undefined ? ratios.total_cementitious_content_kg_m3 : (ratios.TotalCementitiousContentKgM3 !== undefined ? ratios.TotalCementitiousContentKgM3 : 0);
+                    var scmPct = ratios.scm_replacement_percentage !== undefined ? ratios.scm_replacement_percentage : (ratios.ScmReplacementPercentage !== undefined ? ratios.ScmReplacementPercentage : 0);
+                    var totalMass = ratios.total_mass_kg_m3 !== undefined ? ratios.total_mass_kg_m3 : (ratios.TotalMassKgM3 !== undefined ? ratios.TotalMassKgM3 : 0);
+
+                    document.getElementById("ratioAc").innerText = Number(w_c).toFixed(4);
+                    document.getElementById("ratioAb").innerText = Number(w_b).toFixed(4);
+                    document.getElementById("ratioCementante").innerText = Number(totalCement).toFixed(1) + " kg/m³";
+                    document.getElementById("ratioScm").innerText = Number(scmPct).toFixed(2) + " %";
+                    document.getElementById("ratioMasa").innerText = Number(totalMass).toFixed(1) + " kg/m³";
+                    document.getElementById("badgeLatencia").innerText = (res.latencyMs || 0) + " ms";
 
                     // Metadatos
-                    if (d.metadata) {
-                        document.getElementById("metaModelo").innerText = d.metadata.model_type || "VotingEnsemble";
-                        document.getElementById("metaId").innerText = d.metadata.model_id || "wheat_cheese_4swj34tkjn_11";
-                        if (d.metadata.model_sha256) {
-                            document.getElementById("metaSha").innerText = d.metadata.model_sha256.substring(0, 12) + "...";
-                            document.getElementById("metaSha").title = d.metadata.model_sha256;
-                        }
+                    var meta = d.metadata || d.Metadata || {};
+                    document.getElementById("metaModelo").innerText = meta.model_type || meta.ModelType || "VotingEnsemble";
+                    document.getElementById("metaId").innerText = meta.model_id || meta.ModelId || "wheat_cheese_4swj34tkjn_11";
+                    var sha = meta.model_sha256 || meta.ModelSha256 || "";
+                    if (sha) {
+                        document.getElementById("metaSha").innerText = sha.substring(0, 12) + "...";
+                        document.getElementById("metaSha").title = sha;
                     }
 
                     // Advertencias
@@ -460,12 +472,18 @@
                     var listaAdv = document.getElementById("listaAdvertencias");
                     listaAdv.innerHTML = "";
 
-                    if (d.warnings && d.warnings.length > 0) {
+                    var warnings = d.warnings || d.Warnings || [];
+                    if (warnings.length > 0) {
                         contAdv.classList.remove("d-none");
-                        d.warnings.forEach(function (w) {
+                        warnings.forEach(function (w) {
+                            var code = w.code || w.Code || "";
+                            var field = w.field || w.Field || "";
+                            var boundary = w.reference_boundary || w.ReferenceBoundary || "";
+                            var message = w.message || w.Message || "";
+
                             var div = document.createElement("div");
                             div.className = "alert alert-warning py-2 px-3 small mb-2 border-warning";
-                            div.innerHTML = "<strong>[" + w.code + "] " + (w.field || "") + " (Límite: " + (w.reference_boundary || "") + ")</strong><div>" + w.message + "</div>";
+                            div.innerHTML = "<strong>[" + code + "] " + field + " (Límite: " + boundary + ")</strong><div>" + message + "</div>";
                             listaAdv.appendChild(div);
                         });
                     } else {
@@ -474,20 +492,24 @@
 
                     panelResultados.classList.remove("d-none");
                 } else {
-                    // Mostrar error
                     panelError.classList.remove("d-none");
                     document.getElementById("txtErrorMensaje").innerText = res.message || "Error al procesar la solicitud.";
 
                     var listaCampos = document.getElementById("listaErroresCampos");
                     listaCampos.innerHTML = "";
 
-                    if (res.details && res.details.invalid_fields && res.details.invalid_fields.length > 0) {
+                    var details = res.details || res.Details;
+                    var invalidFields = (details && (details.invalid_fields || details.InvalidFields)) ? (details.invalid_fields || details.InvalidFields) : null;
+
+                    if (invalidFields && invalidFields.length > 0) {
                         listaCampos.classList.remove("d-none");
                         var ul = document.createElement("ul");
                         ul.className = "small mb-0 text-danger";
-                        res.details.invalid_fields.forEach(function (f) {
+                        invalidFields.forEach(function (f) {
+                            var fName = f.field || f.Field || "";
+                            var fMsg = f.message || f.Message || "";
                             var li = document.createElement("li");
-                            li.innerHTML = "<strong>" + f.field + ":</strong> " + f.message;
+                            li.innerHTML = "<strong>" + fName + ":</strong> " + fMsg;
                             ul.appendChild(li);
                         });
                         listaCampos.appendChild(ul);
