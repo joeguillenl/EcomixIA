@@ -1,4 +1,4 @@
-﻿@model EcomixIA.Models.Mezcla
+@model EcomixIA.Models.Mezcla
 @{
     ViewBag.Title = "Detalles de la mezcla";
     var materiales = (SelectList)ViewBag.Materiales;
@@ -7,6 +7,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h3 mb-0">@Model.Nombre</h1>
     <div class="d-flex gap-2">
+        @Html.ActionLink("Simular con EcoMix IA", "Simulador", new { mezclaId = Model.Id }, new { @class = "btn btn-success" })
         @Html.ActionLink("Editar", "Edit", new { id = Model.Id }, new { @class = "btn btn-outline-primary" })
         @Html.ActionLink("Volver a la lista", "Index", null, new { @class = "btn btn-outline-secondary" })
     </div>

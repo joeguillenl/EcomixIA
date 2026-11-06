@@ -1,9 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 @{
     string controlador = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string accion = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
     string claseInicio = controlador == "Home" ? "nav-link active" : "nav-link";
     string claseMateriales = controlador == "Materiales" ? "nav-link active" : "nav-link";
-    string claseMezclas = controlador == "Mezclas" ? "nav-link active" : "nav-link";
+    string claseMezclas = (controlador == "Mezclas" && accion != "Simulador") ? "nav-link active" : "nav-link";
+    string claseSimulador = (controlador == "Mezclas" && accion == "Simulador") ? "nav-link active text-success fw-semibold" : "nav-link";
 }
 <html lang="es">
 <head>
@@ -29,6 +31,7 @@
                     @Html.ActionLink("Inicio", "Index", "Home", null, new { @class = claseInicio })
                     @Html.ActionLink("Materiales", "Index", "Materiales", null, new { @class = claseMateriales })
                     @Html.ActionLink("Mezclas", "Index", "Mezclas", null, new { @class = claseMezclas })
+                    @Html.ActionLink("Simulador IA", "Simulador", "Mezclas", null, new { @class = claseSimulador })
                 </div>
             </div>
         </div>
