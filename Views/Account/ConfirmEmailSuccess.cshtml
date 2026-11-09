@@ -1,0 +1,24 @@
+﻿﻿@{
+    ViewBag.Title = "Correo confirmado";
+    string message = ViewBag.SuccessMessage as string ?? ViewBag.InfoMessage as string ?? "Su correo electrónico ha sido confirmado.";
+}
+
+<div class="row justify-content-center my-4">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0 text-center p-4">
+            <div class="card-body">
+                <div class="display-4 text-success mb-3">✓</div>
+                <h1 class="h3 fw-bold mb-3">Cuenta Activada</h1>
+                <div class="alert alert-success my-4" role="alert">
+                    @message
+                </div>
+                <p class="text-secondary small mb-4">
+                    Su cuenta se encuentra lista para su uso con el rol <strong>Registrado</strong>. Las funciones de inicio de sesión se habilitarán formalmente en la subetapa de autenticación F2.3.
+                </p>
+                <div class="d-grid gap-2 col-md-8 mx-auto">
+                    <a href="@Url.Action("Index", "Home")" class="btn btn-primary">Ir al inicio</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

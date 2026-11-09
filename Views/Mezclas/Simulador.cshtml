@@ -1,539 +1,674 @@
-﻿@model EcomixIA.Models.ViewModels.SimuladorDosificacionViewModel
-@{
-    ViewBag.Title = "Simulador de Resistencia con IA";
-}
-
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h1 class="h3 mb-1"><i class="bi bi-cpu text-success"></i> Simulador de Resistencia con IA</h1>
-        <p class="text-secondary small mb-0">
-            Estimación de resistencia a compresión (7 y 28 días) conectada al modelo <strong>VotingEnsemble</strong> en Azure Container Apps (Chile Central).
-        </p>
-    </div>
-    <div>
-        @Html.ActionLink("Volver a Mezclas", "Index", "Mezclas", null, new { @class = "btn btn-outline-secondary" })
-    </div>
-</div>
-
-@if (!string.IsNullOrEmpty(Model.MezclaOrigenNombre))
-{
-    <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-3">
-        <i class="bi bi-info-circle-fill"></i>
-        <span>Dosificación precargada a partir de la mezcla guardada: <strong>@Model.MezclaOrigenNombre</strong> (Id: @Model.MezclaOrigenId)</span>
-    </div>
-}
-
-<!-- Presets de Pruebas Rápidas -->
-<div class="card shadow-sm border-0 mb-4 bg-light">
-    <div class="card-body py-2 px-3">
-        <div class="d-flex flex-wrap align-items-center gap-2">
-            <span class="small fw-semibold text-secondary"><i class="bi bi-magic me-1"></i> Dosificaciones de prueba:</span>
-            <button type="button" class="btn btn-sm btn-outline-primary" onclick="cargarPreset('canonica')">
-                <i class="bi bi-bookmark-check"></i> Canónica (280 kg cto)
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-success" onclick="cargarPreset('ecologica')">
-                <i class="bi bi-tree"></i> Ecológica (54.5% SCM)
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-dark" onclick="cargarPreset('estructural')">
-                <i class="bi bi-building"></i> Alta Resistencia (360 kg cto)
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="cargarPreset('invalida')">
-                <i class="bi bi-exclamation-triangle"></i> Inválida (Error 422)
-            </button>
-        </div>
-    </div>
-</div>
-
-<div class="row g-4">
-    <!-- Formulario de Dosificación -->
-    <div class="col-lg-6">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white py-3">
-                <h5 class="card-title mb-0 fw-semibold">
-                    <i class="bi bi-sliders text-primary me-1"></i> Dosificación por m³ de Concreto
-                </h5>
-            </div>
-            <div class="card-body">
-                @using (Html.BeginForm("Simulador", "Mezclas", FormMethod.Post, new { id = "formSimulador" }))
-                {
-                    @Html.AntiForgeryToken()
-                    @Html.HiddenFor(m => m.MezclaOrigenId)
-                    @Html.HiddenFor(m => m.MezclaOrigenNombre)
-
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            @Html.LabelFor(m => m.Cemento, new { @class = "form-label small fw-semibold", @for = "inCemento" })
-                            <div class="input-group">
-                                @Html.TextBoxFor(m => m.Cemento, new { @class = "form-control", type = "number", step = "any", id = "inCemento", oninput = "calcularTotales()" })
-                                <span class="input-group-text small">kg/m³</span>
-                            </div>
-                            @Html.ValidationMessageFor(m => m.Cemento, "", new { @class = "text-danger small" })
-                        </div>
-
-                        <div class="col-md-6">
-                            @Html.LabelFor(m => m.Agua, new { @class = "form-label small fw-semibold", @for = "inAgua" })
-                            <div class="input-group">
-                                @Html.TextBoxFor(m => m.Agua, new { @class = "form-control", type = "number", step = "any", id = "inAgua", oninput = "calcularTotales()" })
-                                <span class="input-group-text small">kg/m³</span>
-                            </div>
-                            @Html.ValidationMessageFor(m => m.Agua, "", new { @class = "text-danger small" })
-                        </div>
-
-                        <div class="col-md-6">
-                            @Html.LabelFor(m => m.EscoriaAltoHorno, new { @class = "form-label small fw-semibold", @for = "inEscoria" })
-                            <div class="input-group">
-                                @Html.TextBoxFor(m => m.EscoriaAltoHorno, new { @class = "form-control", type = "number", step = "any", id = "inEscoria", oninput = "calcularTotales()" })
-                                <span class="input-group-text small">kg/m³</span>
-                            </div>
-                            @Html.ValidationMessageFor(m => m.EscoriaAltoHorno, "", new { @class = "text-danger small" })
-                        </div>
-
-                        <div class="col-md-6">
-                            @Html.LabelFor(m => m.CenizaVolante, new { @class = "form-label small fw-semibold", @for = "inCeniza" })
-                            <div class="input-group">
-                                @Html.TextBoxFor(m => m.CenizaVolante, new { @class = "form-control", type = "number", step = "any", id = "inCeniza", oninput = "calcularTotales()" })
-                                <span class="input-group-text small">kg/m³</span>
-                            </div>
-                            @Html.ValidationMessageFor(m => m.CenizaVolante, "", new { @class = "text-danger small" })
-                        </div>
-
-                        <div class="col-md-6">
-                            @Html.LabelFor(m => m.AgregadoGrueso, new { @class = "form-label small fw-semibold", @for = "inGrueso" })
-                            <div class="input-group">
-                                @Html.TextBoxFor(m => m.AgregadoGrueso, new { @class = "form-control", type = "number", step = "any", id = "inGrueso", oninput = "calcularTotales()" })
-                                <span class="input-group-text small">kg/m³</span>
-                            </div>
-                            @Html.ValidationMessageFor(m => m.AgregadoGrueso, "", new { @class = "text-danger small" })
-                        </div>
-
-                        <div class="col-md-6">
-                            @Html.LabelFor(m => m.AgregadoFino, new { @class = "form-label small fw-semibold", @for = "inFino" })
-                            <div class="input-group">
-                                @Html.TextBoxFor(m => m.AgregadoFino, new { @class = "form-control", type = "number", step = "any", id = "inFino", oninput = "calcularTotales()" })
-                                <span class="input-group-text small">kg/m³</span>
-                            </div>
-                            @Html.ValidationMessageFor(m => m.AgregadoFino, "", new { @class = "text-danger small" })
-                        </div>
-
-                        <div class="col-12">
-                            @Html.LabelFor(m => m.Superplastificante, new { @class = "form-label small fw-semibold", @for = "inSp" })
-                            <div class="input-group">
-                                @Html.TextBoxFor(m => m.Superplastificante, new { @class = "form-control", type = "number", step = "any", id = "inSp", oninput = "calcularTotales()" })
-                                <span class="input-group-text small">kg/m³</span>
-                            </div>
-                            @Html.ValidationMessageFor(m => m.Superplastificante, "", new { @class = "text-danger small" })
-                        </div>
-                    </div>
-
-                    <!-- Indicadores en tiempo real -->
-                    <div class="bg-light rounded p-3 mt-3 border">
-                        <div class="row text-center">
-                            <div class="col-4">
-                                <div class="text-secondary small">Masa total aprox.</div>
-                                <div class="fw-bold" id="lblMasaTotal">-- kg/m³</div>
-                            </div>
-                            <div class="col-4">
-                                <div class="text-secondary small">Relación a/c</div>
-                                <div class="fw-bold" id="lblRelacionAc">--</div>
-                            </div>
-                            <div class="col-4">
-                                <div class="text-secondary small">Sustitución SCM</div>
-                                <div class="fw-bold text-success" id="lblSustitucionScm">-- %</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-4">
-                        <button type="submit" id="btnSimular" class="btn btn-success btn-lg w-100 fw-semibold d-flex align-items-center justify-content-center gap-2">
-                            <i class="bi bi-lightning-charge-fill"></i>
-                            <span>Predecir Resistencia con EcoMix IA</span>
-                        </button>
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-
-    <!-- Panel de Resultados y Telemetría -->
-    <div class="col-lg-6">
-        <!-- Estado de Carga / Spinner -->
-        <div id="panelCarga" class="card shadow-sm border-0 h-100 d-none text-center p-5 justify-content-center align-items-center">
-            <div class="spinner-border text-success mb-3" style="width: 3.5rem; height: 3.5rem;" role="status">
-                <span class="visually-hidden">Consultando servicio ML...</span>
-            </div>
-            <h5 class="fw-bold mb-2">Consultando modelo en Azure ML...</h5>
-            <p class="text-secondary small mb-3" style="max-width: 400px;">
-                Conectando de forma segura con <code>ca-ecomix-inference-api</code> en la región Chile Central.
-            </p>
-            <div class="alert alert-warning py-2 px-3 small border-0 text-start w-100" style="max-width: 420px;">
-                <i class="bi bi-clock-history me-1"></i>
-                <strong>Aviso de escala a cero:</strong> Si el contenedor estaba en reposo (0 réplicas), el arranque en frío puede tomar entre 8 y 15 segundos. Las siguientes solicitudes responderán en menos de 400 ms.
-            </div>
-        </div>
-
-        <!-- Estado de Error -->
-        <div id="panelError" class="card shadow-sm border-danger border-2 mb-4 @(string.IsNullOrEmpty(Model.ErrorMensaje) ? "d-none" : "")">
-            <div class="card-header bg-danger text-white py-2">
-                <i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>Error en la predicción</strong>
-            </div>
-            <div class="card-body">
-                <p id="txtErrorMensaje" class="mb-2 text-danger fw-semibold">@Model.ErrorMensaje</p>
-                <div id="listaErroresCampos" class="@(Model.ErrorDetalle?.InvalidFields?.Any() == true ? "" : "d-none")">
-                    <div class="small fw-bold text-secondary mb-1">Detalle de inconsistencias detectadas:</div>
-                    <ul class="small mb-0 text-danger" id="ulErroresCampos">
-                        @if (Model.ErrorDetalle?.InvalidFields != null)
-                        {
-                            foreach (var err in Model.ErrorDetalle.InvalidFields)
-                            {
-                                <li><strong>@err.Field:</strong> @err.Message</li>
-                            }
-                        }
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Estado de Resultados -->
-        <div id="panelResultados" class="card shadow-sm border-0 h-100 @(Model.Ejecutado ? "" : "d-none")">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0 fw-semibold text-success">
-                    <i class="bi bi-check-circle-fill text-success me-1"></i> Resultados de Inferencia ML
-                </h5>
-                <span class="badge text-bg-light border text-secondary" id="badgeLatencia">
-                    <i class="bi bi-speedometer2"></i> @(Model.LatenciaMs) ms
-                </span>
-            </div>
-            <div class="card-body">
-                <!-- Tarjetas de Resistencia -->
-                <div class="row g-3 mb-4">
-                    <div class="col-6">
-                        <div class="p-3 rounded-3 border bg-light text-center h-100">
-                            <span class="badge text-bg-secondary mb-2">Curado Temprano</span>
-                            <div class="text-secondary small fw-semibold">Resistencia a 7 días</div>
-                            <div class="display-6 fw-bold text-primary my-1" id="res7d">
-                                @(Model.Resultado?.Predictions?.Strength7dMpa.ToString("0.00") ?? "--")
-                            </div>
-                            <div class="text-muted small">MPa</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="p-3 rounded-3 border bg-light text-center h-100">
-                            <span class="badge text-bg-success mb-2">Diseño Estructural</span>
-                            <div class="text-secondary small fw-semibold">Resistencia a 28 días</div>
-                            <div class="display-6 fw-bold text-success my-1" id="res28d">
-                                @(Model.Resultado?.Predictions?.Strength28dMpa.ToString("0.00") ?? "--")
-                            </div>
-                            <div class="text-muted small">MPa</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Ratios de la Mezcla -->
-                <h6 class="fw-semibold text-secondary small text-uppercase mb-2">Ratios Físicos de la Mezcla</h6>
-                <div class="table-responsive mb-4">
-                    <table class="table table-sm table-bordered align-middle small mb-0">
-                        <tbody>
-                            <tr>
-                                <th class="table-light w-50">Relación Agua/Cemento (a/c)</th>
-                                <td class="text-end fw-semibold" id="ratioAc">
-                                    @(Model.Resultado?.MixRatios?.WaterCementRatio.ToString("0.0000") ?? "--")
-                                </td>
-                            </tr>
-                            <tr>
-                                <th class="table-light">Relación Agua/Cementante (a/b)</th>
-                                <td class="text-end fw-semibold" id="ratioAb">
-                                    @(Model.Resultado?.MixRatios?.WaterBinderRatio.ToString("0.0000") ?? "--")
-                                </td>
-                            </tr>
-                            <tr>
-                                <th class="table-light">Material Cementante Total</th>
-                                <td class="text-end fw-semibold" id="ratioCementante">
-                                    @(Model.Resultado?.MixRatios?.TotalCementitiousContentKgM3.ToString("0.0") ?? "--") kg/m³
-                                </td>
-                            </tr>
-                            <tr>
-                                <th class="table-light">Sustitución de Clínker por SCM</th>
-                                <td class="text-end fw-bold text-success" id="ratioScm">
-                                    @(Model.Resultado?.MixRatios?.ScmReplacementPercentage.ToString("0.00") ?? "--") %
-                                </td>
-                            </tr>
-                            <tr>
-                                <th class="table-light">Masa Total Verificada</th>
-                                <td class="text-end fw-semibold" id="ratioMasa">
-                                    @(Model.Resultado?.MixRatios?.TotalMassKgM3.ToString("0.0") ?? "--") kg/m³
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Advertencias Normativas ACI -->
-                <div id="contenedorAdvertencias" class="@(Model.Resultado?.Warnings?.Any() == true ? "" : "d-none") mb-4">
-                    <h6 class="fw-semibold text-warning-emphasis small text-uppercase mb-2">
-                        <i class="bi bi-shield-exclamation text-warning me-1"></i> Advertencias del Validador ACI
-                    </h6>
-                    <div id="listaAdvertencias">
-                        @if (Model.Resultado?.Warnings != null)
-                        {
-                            foreach (var w in Model.Resultado.Warnings)
-                            {
-                                <div class="alert alert-warning py-2 px-3 small mb-2 border-warning">
-                                    <div class="fw-bold">[@w.Code] @w.Field (Límite: @w.ReferenceBoundary)</div>
-                                    <div>@w.Message</div>
-                                </div>
-                            }
-                        }
-                    </div>
-                </div>
-
-                <!-- Metadatos del Modelo y Trazabilidad -->
-                <div class="border-top pt-3 small text-secondary">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span>Modelo:</span>
-                        <span class="fw-semibold" id="metaModelo">@(Model.Resultado?.Metadata?.ModelType ?? "VotingEnsemble (AutoML)")</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-1">
-                        <span>ID Experimento:</span>
-                        <span class="font-monospace" id="metaId">@(Model.Resultado?.Metadata?.ModelId ?? "wheat_cheese_4swj34tkjn_11")</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Hash SHA-256:</span>
-                        <span class="font-monospace small" id="metaSha" title="@(Model.Resultado?.Metadata?.ModelSha256)">
-                            @(Model.Resultado?.Metadata?.ModelSha256 != null && Model.Resultado.Metadata.ModelSha256.Length >= 12 ? Model.Resultado.Metadata.ModelSha256.Substring(0, 12) + "..." : "--")
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Disclaimer Legal y Técnico -->
-                <div class="alert alert-light border small text-muted mb-0 mt-3 p-2">
-                    <i class="bi bi-info-circle me-1"></i>
-                    <strong>Aviso Técnico:</strong> Las estimaciones generadas corresponden a inferencias estadísticas de Machine Learning (VotingEnsemble, R² = 0.912) y no constituyen certificaciones estructurales oficiales de laboratorio según NTP 339.034 o ASTM C39.
-                </div>
-            </div>
-        </div>
-
-        <!-- Placeholder Inicial si no se ha ejecutado -->
-        <div id="panelPlaceholder" class="card shadow-sm border-0 h-100 text-center p-5 justify-content-center align-items-center @(Model.Ejecutado || !string.IsNullOrEmpty(Model.ErrorMensaje) ? "d-none" : "")">
-            <i class="bi bi-cpu text-secondary opacity-50 display-1 mb-3"></i>
-            <h5 class="fw-semibold text-secondary">Listo para simular</h5>
-            <p class="text-muted small max-w-sm mb-0">
-                Selecciona un preset de dosificación o ingresa los componentes manualmente, y pulsa <strong>Predecir Resistencia</strong> para consultar el modelo en Azure.
-            </p>
-        </div>
-    </div>
-</div>
-
-<script>
-    var presets = {
-        canonica: {
-            cemento: 280.0,
-            escoria: 0.0,
-            ceniza: 0.0,
-            agua: 180.0,
-            sp: 0.0,
-            grueso: 1050.0,
-            fino: 750.0
-        },
-        ecologica: {
-            cemento: 150.0,
-            escoria: 100.0,
-            ceniza: 80.0,
-            agua: 165.0,
-            sp: 5.0,
-            grueso: 1000.0,
-            fino: 750.0
-        },
-        estructural: {
-            cemento: 360.0,
-            escoria: 60.0,
-            ceniza: 0.0,
-            agua: 160.0,
-            sp: 6.0,
-            grueso: 1020.0,
-            fino: 740.0
-        },
-        invalida: {
-            cemento: -10.0,
-            escoria: 0.0,
-            ceniza: 0.0,
-            agua: 180.0,
-            sp: 0.0,
-            grueso: 1050.0,
-            fino: 750.0
-        }
-    };
-
-    function cargarPreset(nombre) {
-        var p = presets[nombre];
-        if (!p) return;
-
-        document.getElementById('inCemento').value = p.cemento;
-        document.getElementById('inEscoria').value = p.escoria;
-        document.getElementById('inCeniza').value = p.ceniza;
-        document.getElementById('inAgua').value = p.agua;
-        document.getElementById('inSp').value = p.sp;
-        document.getElementById('inGrueso').value = p.grueso;
-        document.getElementById('inFino').value = p.fino;
-
-        calcularTotales();
-    }
-
-    function calcularTotales() {
-        var c = parseFloat(document.getElementById('inCemento').value) || 0;
-        var s = parseFloat(document.getElementById('inEscoria').value) || 0;
-        var f = parseFloat(document.getElementById('inCeniza').value) || 0;
-        var w = parseFloat(document.getElementById('inAgua').value) || 0;
-        var sp = parseFloat(document.getElementById('inSp').value) || 0;
-        var g = parseFloat(document.getElementById('inGrueso').value) || 0;
-        var a = parseFloat(document.getElementById('inFino').value) || 0;
-
-        var masaTotal = c + s + f + w + sp + g + a;
-        var binder = c + s + f;
-        var scmPct = binder > 0 ? ((s + f) / binder * 100) : 0;
-        var ac = c > 0 ? (w / c) : 0;
-
-        document.getElementById('lblMasaTotal').innerText = masaTotal.toFixed(1) + ' kg/m³';
-        document.getElementById('lblRelacionAc').innerText = ac > 0 ? ac.toFixed(3) : '--';
-        document.getElementById('lblSustitucionScm').innerText = scmPct.toFixed(1) + ' %';
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-        calcularTotales();
-
-        var form = document.getElementById("formSimulador");
-        if (!form) return;
-
-        form.addEventListener("submit", function (e) {
-            e.preventDefault();
-
-            var panelCarga = document.getElementById("panelCarga");
-            var panelError = document.getElementById("panelError");
-            var panelResultados = document.getElementById("panelResultados");
-            var panelPlaceholder = document.getElementById("panelPlaceholder");
-            var btnSimular = document.getElementById("btnSimular");
-
-            panelCarga.classList.remove("d-none");
-            panelError.classList.add("d-none");
-            panelResultados.classList.add("d-none");
-            panelPlaceholder.classList.add("d-none");
-            btnSimular.disabled = true;
-
-            var formData = new FormData(form);
-
-            fetch('@Url.Action("SimularAjax", "Mezclas")', {
-                method: 'POST',
-                body: formData
-            })
-            .then(function (res) {
-                return res.json();
-            })
-            .then(function (res) {
-                panelCarga.classList.add("d-none");
-                btnSimular.disabled = false;
-
-                if (res.success && res.data) {
-                    var d = res.data;
-
-                    // Predicciones (soporte snake_case y PascalCase)
-                    var pred = d.predictions || d.Predictions || {};
-                    var p7 = pred.strength_7d_mpa !== undefined ? pred.strength_7d_mpa : (pred.Strength7dMpa !== undefined ? pred.Strength7dMpa : 0);
-                    var p28 = pred.strength_28d_mpa !== undefined ? pred.strength_28d_mpa : (pred.Strength28dMpa !== undefined ? pred.Strength28dMpa : 0);
-
-                    document.getElementById("res7d").innerText = Number(p7).toFixed(2);
-                    document.getElementById("res28d").innerText = Number(p28).toFixed(2);
-
-                    // Ratios
-                    var ratios = d.mix_ratios || d.MixRatios || {};
-                    var w_c = ratios.water_cement_ratio !== undefined ? ratios.water_cement_ratio : (ratios.WaterCementRatio !== undefined ? ratios.WaterCementRatio : 0);
-                    var w_b = ratios.water_binder_ratio !== undefined ? ratios.water_binder_ratio : (ratios.WaterBinderRatio !== undefined ? ratios.WaterBinderRatio : 0);
-                    var totalCement = ratios.total_cementitious_content_kg_m3 !== undefined ? ratios.total_cementitious_content_kg_m3 : (ratios.TotalCementitiousContentKgM3 !== undefined ? ratios.TotalCementitiousContentKgM3 : 0);
-                    var scmPct = ratios.scm_replacement_percentage !== undefined ? ratios.scm_replacement_percentage : (ratios.ScmReplacementPercentage !== undefined ? ratios.ScmReplacementPercentage : 0);
-                    var totalMass = ratios.total_mass_kg_m3 !== undefined ? ratios.total_mass_kg_m3 : (ratios.TotalMassKgM3 !== undefined ? ratios.TotalMassKgM3 : 0);
-
-                    document.getElementById("ratioAc").innerText = Number(w_c).toFixed(4);
-                    document.getElementById("ratioAb").innerText = Number(w_b).toFixed(4);
-                    document.getElementById("ratioCementante").innerText = Number(totalCement).toFixed(1) + " kg/m³";
-                    document.getElementById("ratioScm").innerText = Number(scmPct).toFixed(2) + " %";
-                    document.getElementById("ratioMasa").innerText = Number(totalMass).toFixed(1) + " kg/m³";
-                    document.getElementById("badgeLatencia").innerText = (res.latencyMs || 0) + " ms";
-
-                    // Metadatos
-                    var meta = d.metadata || d.Metadata || {};
-                    document.getElementById("metaModelo").innerText = meta.model_type || meta.ModelType || "VotingEnsemble";
-                    document.getElementById("metaId").innerText = meta.model_id || meta.ModelId || "wheat_cheese_4swj34tkjn_11";
-                    var sha = meta.model_sha256 || meta.ModelSha256 || "";
-                    if (sha) {
-                        document.getElementById("metaSha").innerText = sha.substring(0, 12) + "...";
-                        document.getElementById("metaSha").title = sha;
-                    }
-
-                    // Advertencias
-                    var contAdv = document.getElementById("contenedorAdvertencias");
-                    var listaAdv = document.getElementById("listaAdvertencias");
-                    listaAdv.innerHTML = "";
-
-                    var warnings = d.warnings || d.Warnings || [];
-                    if (warnings.length > 0) {
-                        contAdv.classList.remove("d-none");
-                        warnings.forEach(function (w) {
-                            var code = w.code || w.Code || "";
-                            var field = w.field || w.Field || "";
-                            var boundary = w.reference_boundary || w.ReferenceBoundary || "";
-                            var message = w.message || w.Message || "";
-
-                            var div = document.createElement("div");
-                            div.className = "alert alert-warning py-2 px-3 small mb-2 border-warning";
-                            div.innerHTML = "<strong>[" + code + "] " + field + " (Límite: " + boundary + ")</strong><div>" + message + "</div>";
-                            listaAdv.appendChild(div);
-                        });
-                    } else {
-                        contAdv.classList.add("d-none");
-                    }
-
-                    panelResultados.classList.remove("d-none");
-                } else {
-                    panelError.classList.remove("d-none");
-                    document.getElementById("txtErrorMensaje").innerText = res.message || "Error al procesar la solicitud.";
-
-                    var listaCampos = document.getElementById("listaErroresCampos");
-                    listaCampos.innerHTML = "";
-
-                    var details = res.details || res.Details;
-                    var invalidFields = (details && (details.invalid_fields || details.InvalidFields)) ? (details.invalid_fields || details.InvalidFields) : null;
-
-                    if (invalidFields && invalidFields.length > 0) {
-                        listaCampos.classList.remove("d-none");
-                        var ul = document.createElement("ul");
-                        ul.className = "small mb-0 text-danger";
-                        invalidFields.forEach(function (f) {
-                            var fName = f.field || f.Field || "";
-                            var fMsg = f.message || f.Message || "";
-                            var li = document.createElement("li");
-                            li.innerHTML = "<strong>" + fName + ":</strong> " + fMsg;
-                            ul.appendChild(li);
-                        });
-                        listaCampos.appendChild(ul);
-                    } else if (res.errors && res.errors.length > 0) {
-                        listaCampos.classList.remove("d-none");
-                        var ul2 = document.createElement("ul");
-                        ul2.className = "small mb-0 text-danger";
-                        res.errors.forEach(function (err) {
-                            var li2 = document.createElement("li");
-                            li2.innerText = err;
-                            ul2.appendChild(li2);
-                        });
-                        listaCampos.appendChild(ul2);
-                    } else {
-                        listaCampos.classList.add("d-none");
-                    }
-                }
-            })
-            .catch(function (err) {
-                panelCarga.classList.add("d-none");
-                btnSimular.disabled = false;
-                panelError.classList.remove("d-none");
-                document.getElementById("txtErrorMensaje").innerText = "Error de comunicación con el servidor local: " + err.message;
-            });
-        });
-    });
-</script>
+﻿@model EcomixIA.Models.ViewModels.SimuladorDosificacionViewModel
+@{
+    ViewBag.Title = "Simulador IA";
+}
+
+<style>
+    /* Estilos directos de Badges para Guía rápida de componentes (Fase 3 UX) */
+    .badge-sim-cemento,
+    .badge-sim-agua,
+    .badge-sim-escoria,
+    .badge-sim-ceniza,
+    .badge-sim-agregado,
+    .badge-sim-aditivo {
+        display: inline-block !important;
+        padding: 0.18rem 0.55rem !important;
+        border-radius: 9999px !important;
+        font-size: 0.72rem !important;
+        font-weight: 600 !important;
+        line-height: 1.2 !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+        text-decoration: none !important;
+    }
+    .badge-sim-cemento {
+        background-color: #DCFCE7 !important;
+        color: #15803D !important;
+        border: 1px solid #BBF7D0 !important;
+    }
+    .badge-sim-agua {
+        background-color: #CCFBF1 !important;
+        color: #0F766E !important;
+        border: 1px solid #99F6E4 !important;
+    }
+    .badge-sim-escoria {
+        background-color: #FEF3C7 !important;
+        color: #B45309 !important;
+        border: 1px solid #FDE68A !important;
+    }
+    .badge-sim-ceniza {
+        background-color: #F3E8FF !important;
+        color: #7E22CE !important;
+        border: 1px solid #E9D5FF !important;
+    }
+    .badge-sim-agregado {
+        background-color: #FEF3C7 !important;
+        color: #B45309 !important;
+        border: 1px solid #FDE68A !important;
+    }
+    .badge-sim-aditivo {
+        background-color: #F3E8FF !important;
+        color: #7E22CE !important;
+        border: 1px solid #E9D5FF !important;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h3 mb-1 fw-bold text-dark d-flex align-items-center gap-2">
+            <i class="bi bi-cpu text-success" aria-hidden="true"></i>
+            <span>Simulador de Resistencia con IA</span>
+        </h1>
+        <p class="text-secondary small mb-0">
+            Estimación de resistencia a compresión (7 y 28 días) conectada al modelo <strong>VotingEnsemble</strong> en Azure Container Apps (Chile Central).
+        </p>
+    </div>
+    <div>
+        @Html.ActionLink("Volver a Mezclas", "Index", "Mezclas", null, new { @class = "btn btn-outline-secondary px-3" })
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.MezclaOrigenNombre))
+{
+    <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-3" role="status">
+        <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+        <span>Dosificación precargada a partir de la mezcla guardada: <strong>@Model.MezclaOrigenNombre</strong> (Id: @Model.MezclaOrigenId)</span>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(ViewBag.SafeDenialWarning as string))
+{
+    <div class="alert alert-warning py-2 px-3 small d-flex align-items-center gap-2 mb-3" role="alert">
+        <i class="bi bi-shield-exclamation" aria-hidden="true"></i>
+        <span>@ViewBag.SafeDenialWarning</span>
+    </div>
+}
+
+<!-- Presets de Pruebas Rápidas -->
+<div class="card shadow-sm border-0 mb-4 bg-light" style="border-radius: 10px; border: 1px solid #e2e8f0 !important;">
+    <div class="card-body py-2 px-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="small fw-semibold text-secondary"><i class="bi bi-magic me-1" aria-hidden="true"></i> Dosificaciones de prueba:</span>
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="cargarPreset('canonica')">
+                <i class="bi bi-bookmark-check" aria-hidden="true"></i> Canónica (280 kg cto)
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="cargarPreset('ecologica')">
+                <i class="bi bi-tree" aria-hidden="true"></i> Ecológica (54.5% SCM)
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-dark" onclick="cargarPreset('estructural')">
+                <i class="bi bi-building" aria-hidden="true"></i> Alta resistencia (360 kg cto)
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="cargarPreset('invalida')">
+                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Inválida (Error 422)
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Formulario de Dosificación -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0 h-100" style="border-radius: 12px; border: 1px solid #e2e8f0 !important; background: #fff;">
+            <div class="card-header bg-white py-3 border-0 pb-1">
+                <h5 class="card-title mb-0 fw-semibold d-flex align-items-center gap-2 text-dark">
+                    <i class="bi bi-sliders text-success" aria-hidden="true"></i>
+                    <span>Dosificación por m³ de Concreto</span>
+                </h5>
+            </div>
+            <div class="card-body p-4 pt-2">
+                @using (Html.BeginForm("Simulador", "Mezclas", FormMethod.Post, new { id = "formSimulador" }))
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.HiddenFor(m => m.MezclaOrigenId)
+                    @Html.HiddenFor(m => m.MezclaOrigenNombre)
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            @Html.LabelFor(m => m.Cemento, new { @class = "form-label small fw-semibold text-dark", @for = "inCemento" })
+                            <div class="input-group">
+                                @Html.TextBoxFor(m => m.Cemento, new { @class = "form-control", type = "number", step = "any", id = "inCemento", oninput = "calcularTotales()" })
+                                <span class="input-group-text small text-secondary">kg/m³</span>
+                            </div>
+                            @Html.ValidationMessageFor(m => m.Cemento, "", new { @class = "text-danger small" })
+                        </div>
+
+                        <div class="col-md-6">
+                            @Html.LabelFor(m => m.Agua, new { @class = "form-label small fw-semibold text-dark", @for = "inAgua" })
+                            <div class="input-group">
+                                @Html.TextBoxFor(m => m.Agua, new { @class = "form-control", type = "number", step = "any", id = "inAgua", oninput = "calcularTotales()" })
+                                <span class="input-group-text small text-secondary">kg/m³</span>
+                            </div>
+                            @Html.ValidationMessageFor(m => m.Agua, "", new { @class = "text-danger small" })
+                        </div>
+
+                        <div class="col-md-6">
+                            @Html.LabelFor(m => m.EscoriaAltoHorno, new { @class = "form-label small fw-semibold text-dark", @for = "inEscoria" })
+                            <div class="input-group">
+                                @Html.TextBoxFor(m => m.EscoriaAltoHorno, new { @class = "form-control", type = "number", step = "any", id = "inEscoria", oninput = "calcularTotales()" })
+                                <span class="input-group-text small text-secondary">kg/m³</span>
+                            </div>
+                            @Html.ValidationMessageFor(m => m.EscoriaAltoHorno, "", new { @class = "text-danger small" })
+                        </div>
+
+                        <div class="col-md-6">
+                            @Html.LabelFor(m => m.CenizaVolante, new { @class = "form-label small fw-semibold text-dark", @for = "inCeniza" })
+                            <div class="input-group">
+                                @Html.TextBoxFor(m => m.CenizaVolante, new { @class = "form-control", type = "number", step = "any", id = "inCeniza", oninput = "calcularTotales()" })
+                                <span class="input-group-text small text-secondary">kg/m³</span>
+                            </div>
+                            @Html.ValidationMessageFor(m => m.CenizaVolante, "", new { @class = "text-danger small" })
+                        </div>
+
+                        <div class="col-md-6">
+                            @Html.LabelFor(m => m.AgregadoGrueso, new { @class = "form-label small fw-semibold text-dark", @for = "inGrueso" })
+                            <div class="input-group">
+                                @Html.TextBoxFor(m => m.AgregadoGrueso, new { @class = "form-control", type = "number", step = "any", id = "inGrueso", oninput = "calcularTotales()" })
+                                <span class="input-group-text small text-secondary">kg/m³</span>
+                            </div>
+                            @Html.ValidationMessageFor(m => m.AgregadoGrueso, "", new { @class = "text-danger small" })
+                        </div>
+
+                        <div class="col-md-6">
+                            @Html.LabelFor(m => m.AgregadoFino, new { @class = "form-label small fw-semibold text-dark", @for = "inFino" })
+                            <div class="input-group">
+                                @Html.TextBoxFor(m => m.AgregadoFino, new { @class = "form-control", type = "number", step = "any", id = "inFino", oninput = "calcularTotales()" })
+                                <span class="input-group-text small text-secondary">kg/m³</span>
+                            </div>
+                            @Html.ValidationMessageFor(m => m.AgregadoFino, "", new { @class = "text-danger small" })
+                        </div>
+
+                        <div class="col-12">
+                            @Html.LabelFor(m => m.Superplastificante, new { @class = "form-label small fw-semibold text-dark", @for = "inSp" })
+                            <div class="input-group">
+                                @Html.TextBoxFor(m => m.Superplastificante, new { @class = "form-control", type = "number", step = "any", id = "inSp", oninput = "calcularTotales()" })
+                                <span class="input-group-text small text-secondary">kg/m³</span>
+                            </div>
+                            @Html.ValidationMessageFor(m => m.Superplastificante, "", new { @class = "text-danger small" })
+                        </div>
+                    </div>
+
+                    <!-- Indicadores en tiempo real -->
+                    <div class="bg-light rounded-3 p-3 mt-4 border">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="text-secondary small">Masa total aprox.</div>
+                                <div class="fw-bold fs-5 text-dark" id="lblMasaTotal">-- kg/m³</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-secondary small">Relación a/c</div>
+                                <div class="fw-bold fs-5 text-dark" id="lblRelacionAc">--</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-secondary small">Sustitución SCM</div>
+                                <div class="fw-bold fs-5 text-success" id="lblSustitucionScm">-- %</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-1 text-muted small mt-2">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        <span>Valores referenciales para fines académicos.</span>
+                    </div>
+
+                    <div class="mt-3">
+                        <button type="submit" id="btnSimular" class="btn btn-success btn-lg w-100 fw-semibold d-flex align-items-center justify-content-center gap-2 py-3">
+                            <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>
+                            <span>Predecir resistencia con EcoMix IA</span>
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel Derecho: Guía Rápida de Componentes y Predicción -->
+    <div class="col-lg-6">
+        <!-- Guía rápida de componentes (Fase 3 UX) -->
+        <div class="card shadow-sm border-0 mb-3" style="border-radius: 12px; border: 1px solid #e2e8f0 !important; background: #fff;">
+            <div class="card-header bg-white py-2 px-3 border-0 pb-1">
+                <h6 class="card-title mb-0 fw-semibold d-flex align-items-center gap-2 text-dark" style="font-size: 0.88rem;">
+                    <i class="bi bi-info-circle text-success" aria-hidden="true"></i>
+                    <span>Guía rápida de componentes</span>
+                </h6>
+            </div>
+            <div class="card-body p-2 pt-0">
+                <div class="table-responsive" style="overflow-x: hidden;">
+                    <table class="table table-sm align-middle mb-0" style="font-size: 0.72rem;">
+                        <thead class="table-light text-uppercase text-secondary" style="font-size: 0.65rem; border-bottom: 1px solid #e2e8f0;">
+                            <tr>
+                                <th class="py-1 px-1" style="width: 25%;">Componente</th>
+                                <th class="py-1 px-1" style="width: 28%;">Descripción</th>
+                                <th class="py-1 px-1 text-center" style="width: 17%;">Rango típico (kg/m³)</th>
+                                <th class="py-1 px-1" style="width: 30%;">Uso / Recomendación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="py-1 px-1"><span class="badge-sim-cemento">Cemento Portland</span></td>
+                                <td class="py-1 px-1 text-secondary" style="line-height: 1.2;">Cementante principal (p. ej., Tipo I).</td>
+                                <td class="py-1 px-1 text-center font-monospace fw-semibold">250 - 450</td>
+                                <td class="py-1 px-1 text-secondary" style="line-height: 1.2;">Aporta resistencia y durabilidad.</td>
+                            </tr>
+                            <tr>
+                                <td class="py-1 px-1"><span class="badge-sim-agua">Agua de mezclado</span></td>
+                                <td class="py-1 px-1 text-secondary" style="line-height: 1.2;">Agua para hidratación del cemento.</td>
+                                <td class="py-1 px-1 text-center font-monospace fw-semibold">120 - 220</td>
+                                <td class="py-1 px-1 text-secondary" style="line-height: 1.2;">Controla trabajabilidad (a/c ~ 0.35 - 0.65).</td>
+                            </tr>
+                            <tr>
+                                <td class="py-1 px-1"><span class="badge-sim-escoria">Escoria de alto horno</span></td>
+                                <td class="py-1 px-1 text-secondary" style="line-height: 1.2;">SCM siderúrgico suplementario.</td>
+                                <td class="py-1 px-1 text-center font-monospace fw-semibold">0 - 300</td>
+                                <td class="py-1 px-1 text-secondary" style="line-height: 1.2;">Mejora durabilidad y reduce CO₂.</td>
+                            </tr>
+                            <tr>
+                                <td class="py-1 px-1"><span class="badge-sim-ceniza">Ceniza volante / Puzolana</span></td>
+                                <td class="py-1 px-1 text-secondary" style="line-height: 1.2;">SCM termoeléctrico o volcánico.</td>
+                                <td class="py-1 px-1 text-center font-monospace fw-semibold">0 - 200</td>
+                                <td class="py-1 px-1 text-secondary" style="line-height: 1.2;">Mejora trabajabilidad y durabilidad.</td>
+                            </tr>
+                            <tr>
+                                <td class="py-1 px-1"><span class="badge-sim-agregado">Agregado grueso</span></td>
+                                <td class="py-1 px-1 text-secondary" style="line-height: 1.2;">Piedra o grava (p. ej., 3/4").</td>
+                                <td class="py-1 px-1 text-center font-monospace fw-semibold">900 - 1300</td>
+                                <td class="py-1 px-1 text-secondary" style="line-height: 1.2;">Aporta volumen y resistencia.</td>
+                            </tr>
+                            <tr>
+                                <td class="py-1 px-1"><span class="badge-sim-agregado">Agregado fino</span></td>
+                                <td class="py-1 px-1 text-secondary" style="line-height: 1.2;">Arena (p. ej., natural o artesanal).</td>
+                                <td class="py-1 px-1 text-center font-monospace fw-semibold">600 - 900</td>
+                                <td class="py-1 px-1 text-secondary" style="line-height: 1.2;">Rellena vacíos y mejora trabajabilidad.</td>
+                            </tr>
+                            <tr>
+                                <td class="py-1 px-1"><span class="badge-sim-aditivo">Aditivo superplastificante</span></td>
+                                <td class="py-1 px-1 text-secondary" style="line-height: 1.2;">Reductor de agua de alto rango.</td>
+                                <td class="py-1 px-1 text-center font-monospace fw-semibold">0 - 15</td>
+                                <td class="py-1 px-1 text-secondary" style="line-height: 1.2;">Aumenta fluidez manteniendo resistencia.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estado de Carga / Spinner -->
+        <div id="panelCarga" class="card shadow-sm border-0 d-none text-center p-5 justify-content-center align-items-center mb-4" style="border-radius: 12px; border: 1px solid #e2e8f0 !important; background: #fff;">
+            <div class="spinner-border text-success mb-3" style="width: 3.5rem; height: 3.5rem;" role="status">
+                <span class="visually-hidden">Consultando servicio ML...</span>
+            </div>
+            <h5 class="fw-bold mb-2">Consultando modelo en Azure ML...</h5>
+            <p class="text-secondary small mb-3" style="max-width: 400px;">
+                Conectando de forma segura con <code>ca-ecomix-inference-api</code> en la región Chile Central.
+            </p>
+            <div class="alert alert-warning py-2 px-3 small border-0 text-start w-100" style="max-width: 420px;">
+                <i class="bi bi-clock-history me-1" aria-hidden="true"></i>
+                <strong>Aviso de escala a cero:</strong> Si el contenedor estaba en reposo (0 réplicas), el arranque en frío puede tomar entre 8 y 15 segundos. Las siguientes solicitudes responderán en menos de 400 ms.
+            </div>
+        </div>
+
+        <!-- Estado de Error -->
+        <div id="panelError" class="card shadow-sm border-danger border-2 mb-4 @(string.IsNullOrEmpty(Model.ErrorMensaje) ? "d-none" : "")" style="border-radius: 12px;">
+            <div class="card-header bg-danger text-white py-2">
+                <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i> <strong>Error en la predicción</strong>
+            </div>
+            <div class="card-body">
+                <p id="txtErrorMensaje" class="mb-2 text-danger fw-semibold">@Model.ErrorMensaje</p>
+                <div id="listaErroresCampos" class="@(Model.ErrorDetalle?.InvalidFields?.Any() == true ? "" : "d-none")">
+                    <div class="small fw-bold text-secondary mb-1">Detalle de inconsistencias detectadas:</div>
+                    <ul class="small mb-0 text-danger" id="ulErroresCampos">
+                        @if (Model.ErrorDetalle?.InvalidFields != null)
+                        {
+                            foreach (var err in Model.ErrorDetalle.InvalidFields)
+                            {
+                                <li><strong>@err.Field:</strong> @err.Message</li>
+                            }
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estado de Resultados -->
+        <div id="panelResultados" class="card shadow-sm border-0 mb-4 @(Model.Ejecutado ? "" : "d-none")" style="border-radius: 12px; border: 1px solid #e2e8f0 !important; background: #fff;">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-semibold text-success">
+                    <i class="bi bi-check-circle-fill text-success me-1" aria-hidden="true"></i> Resultados de Inferencia ML
+                </h5>
+                <span class="badge text-bg-light border text-secondary" id="badgeLatencia">
+                    <i class="bi bi-speedometer2" aria-hidden="true"></i> @(Model.LatenciaMs) ms
+                </span>
+            </div>
+            <div class="card-body">
+                <!-- Tarjetas de Resistencia -->
+                <div class="row g-3 mb-4">
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 border bg-light text-center h-100">
+                            <span class="badge text-bg-secondary mb-2">Curado Temprano</span>
+                            <div class="text-secondary small fw-semibold">Resistencia a 7 días</div>
+                            <div class="display-6 fw-bold text-primary my-1" id="res7d">
+                                @(Model.Resultado?.Predictions?.Strength7dMpa.ToString("0.00") ?? "--")
+                            </div>
+                            <div class="text-muted small">MPa</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3 border bg-light text-center h-100">
+                            <span class="badge text-bg-success mb-2">Referencia a 28 Días</span>
+                            <div class="text-secondary small fw-semibold">Resistencia a 28 días</div>
+                            <div class="display-6 fw-bold text-success my-1" id="res28d">
+                                @(Model.Resultado?.Predictions?.Strength28dMpa.ToString("0.00") ?? "--")
+                            </div>
+                            <div class="text-muted small">MPa</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ratios de la Mezcla -->
+                <h6 class="fw-semibold text-secondary small text-uppercase mb-2">Ratios Físicos de la Mezcla</h6>
+                <div class="table-responsive mb-4">
+                    <table class="table table-sm table-bordered align-middle small mb-0">
+                        <tbody>
+                            <tr>
+                                <th class="table-light w-50">Relación Agua/Cemento (a/c)</th>
+                                <td class="text-end fw-semibold" id="ratioAc">
+                                    @(Model.Resultado?.MixRatios?.WaterCementRatio.ToString("0.0000") ?? "--")
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="table-light">Relación Agua/Cementante (a/b)</th>
+                                <td class="text-end fw-semibold" id="ratioAb">
+                                    @(Model.Resultado?.MixRatios?.WaterBinderRatio.ToString("0.0000") ?? "--")
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="table-light">Material Cementante Total</th>
+                                <td class="text-end fw-semibold" id="ratioCementante">
+                                    @(Model.Resultado?.MixRatios?.TotalCementitiousContentKgM3.ToString("0.0") ?? "--") kg/m³
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="table-light">Sustitución de Clínker por SCM</th>
+                                <td class="text-end fw-bold text-success" id="ratioScm">
+                                    @(Model.Resultado?.MixRatios?.ScmReplacementPercentage.ToString("0.00") ?? "--") %
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="table-light">Masa Total Verificada</th>
+                                <td class="text-end fw-semibold" id="ratioMasa">
+                                    @(Model.Resultado?.MixRatios?.TotalMassKgM3.ToString("0.0") ?? "--") kg/m³
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Advertencias Normativas ACI -->
+                <div id="contenedorAdvertencias" class="@(Model.Resultado?.Warnings?.Any() == true ? "" : "d-none") mb-4">
+                    <h6 class="fw-semibold text-warning-emphasis small text-uppercase mb-2">
+                        <i class="bi bi-shield-exclamation text-warning me-1" aria-hidden="true"></i> Advertencias del Validador ACI
+                    </h6>
+                    <div id="listaAdvertencias">
+                        @if (Model.Resultado?.Warnings != null)
+                        {
+                            foreach (var w in Model.Resultado.Warnings)
+                            {
+                                <div class="alert alert-warning py-2 px-3 small mb-2 border-warning">
+                                    <div class="fw-bold">[@w.Code] @w.Field (Límite: @w.ReferenceBoundary)</div>
+                                    <div>@w.Message</div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <!-- Metadatos del Modelo y Trazabilidad -->
+                <div class="border-top pt-3 small text-secondary">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Modelo:</span>
+                        <span class="fw-semibold" id="metaModelo">@(Model.Resultado?.Metadata?.ModelType ?? "VotingEnsemble (AutoML)")</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>ID Experimento:</span>
+                        <span class="font-monospace" id="metaId">@(Model.Resultado?.Metadata?.ModelId ?? "wheat_cheese_4swj34tkjn_11")</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Hash SHA-256:</span>
+                        <span class="font-monospace small" id="metaSha" title="@(Model.Resultado?.Metadata?.ModelSha256)">
+                            @(Model.Resultado?.Metadata?.ModelSha256 != null && Model.Resultado.Metadata.ModelSha256.Length >= 12 ? Model.Resultado.Metadata.ModelSha256.Substring(0, 12) + "..." : "--")
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Disclaimer Legal y Técnico -->
+                <div class="alert alert-light border small text-muted mb-0 mt-3 p-2">
+                    <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+                    <strong>Aviso Técnico:</strong> Las estimaciones generadas corresponden a inferencias estadísticas de Machine Learning (VotingEnsemble, R² = 0.912) y no constituyen certificaciones estructurales oficiales de laboratorio según NTP 339.034 o ASTM C39.
+                </div>
+            </div>
+        </div>
+
+        <!-- Placeholder Inicial si no se ha ejecutado (Fase 3 UX) -->
+        <div id="panelPlaceholder" class="card shadow-sm border-0 text-center p-4 justify-content-center align-items-center mb-4 @(Model.Ejecutado || !string.IsNullOrEmpty(Model.ErrorMensaje) ? "d-none" : "")" style="border-radius: 12px; border: 1px solid #e2e8f0 !important; background: #fff; min-height: 180px;">
+            <i class="bi bi-cpu text-muted mb-2" style="font-size: 2.75rem;" aria-hidden="true"></i>
+            <h5 class="fw-semibold text-dark mb-1">Predicción de resistencia</h5>
+            <p class="text-secondary small mb-0" style="max-width: 440px;">
+                El modelo de IA estimará la resistencia a compresión del concreto a los 7 y 28 días (en MPa) según la dosificación ingresada.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    var presets = {
+        canonica: {
+            cemento: 280.0,
+            escoria: 0.0,
+            ceniza: 0.0,
+            agua: 180.0,
+            sp: 0.0,
+            grueso: 1050.0,
+            fino: 750.0
+        },
+        ecologica: {
+            cemento: 150.0,
+            escoria: 100.0,
+            ceniza: 80.0,
+            agua: 165.0,
+            sp: 5.0,
+            grueso: 1000.0,
+            fino: 750.0
+        },
+        estructural: {
+            cemento: 360.0,
+            escoria: 60.0,
+            ceniza: 0.0,
+            agua: 160.0,
+            sp: 6.0,
+            grueso: 1020.0,
+            fino: 740.0
+        },
+        invalida: {
+            cemento: -10.0,
+            escoria: 0.0,
+            ceniza: 0.0,
+            agua: 180.0,
+            sp: 0.0,
+            grueso: 1050.0,
+            fino: 750.0
+        }
+    };
+
+    function cargarPreset(nombre) {
+        var p = presets[nombre];
+        if (!p) return;
+
+        document.getElementById('inCemento').value = p.cemento;
+        document.getElementById('inEscoria').value = p.escoria;
+        document.getElementById('inCeniza').value = p.ceniza;
+        document.getElementById('inAgua').value = p.agua;
+        document.getElementById('inSp').value = p.sp;
+        document.getElementById('inGrueso').value = p.grueso;
+        document.getElementById('inFino').value = p.fino;
+
+        calcularTotales();
+    }
+
+    function calcularTotales() {
+        var c = parseFloat(document.getElementById('inCemento').value) || 0;
+        var s = parseFloat(document.getElementById('inEscoria').value) || 0;
+        var f = parseFloat(document.getElementById('inCeniza').value) || 0;
+        var w = parseFloat(document.getElementById('inAgua').value) || 0;
+        var sp = parseFloat(document.getElementById('inSp').value) || 0;
+        var g = parseFloat(document.getElementById('inGrueso').value) || 0;
+        var a = parseFloat(document.getElementById('inFino').value) || 0;
+
+        var masaTotal = c + s + f + w + sp + g + a;
+        var binder = c + s + f;
+        var scmPct = binder > 0 ? ((s + f) / binder * 100) : 0;
+        var ac = c > 0 ? (w / c) : 0;
+
+        document.getElementById('lblMasaTotal').innerText = masaTotal.toFixed(1) + ' kg/m³';
+        document.getElementById('lblRelacionAc').innerText = ac > 0 ? ac.toFixed(3) : '--';
+        document.getElementById('lblSustitucionScm').innerText = scmPct.toFixed(1) + ' %';
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        calcularTotales();
+
+        var form = document.getElementById("formSimulador");
+        if (!form) return;
+
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            var panelCarga = document.getElementById("panelCarga");
+            var panelError = document.getElementById("panelError");
+            var panelResultados = document.getElementById("panelResultados");
+            var panelPlaceholder = document.getElementById("panelPlaceholder");
+            var btnSimular = document.getElementById("btnSimular");
+
+            panelCarga.classList.remove("d-none");
+            panelError.classList.add("d-none");
+            panelResultados.classList.add("d-none");
+            panelPlaceholder.classList.add("d-none");
+            btnSimular.disabled = true;
+
+            var formData = new FormData(form);
+
+            fetch('@Url.Action("SimularAjax", "Mezclas")', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function (res) {
+                return res.json();
+            })
+            .then(function (res) {
+                panelCarga.classList.add("d-none");
+                btnSimular.disabled = false;
+
+                if (res.success && res.data) {
+                    var d = res.data;
+
+                    // Predicciones (soporte snake_case y PascalCase)
+                    var pred = d.predictions || d.Predictions || {};
+                    var p7 = pred.strength_7d_mpa !== undefined ? pred.strength_7d_mpa : (pred.Strength7dMpa !== undefined ? pred.Strength7dMpa : 0);
+                    var p28 = pred.strength_28d_mpa !== undefined ? pred.strength_28d_mpa : (pred.Strength28dMpa !== undefined ? pred.Strength28dMpa : 0);
+
+                    document.getElementById("res7d").innerText = Number(p7).toFixed(2);
+                    document.getElementById("res28d").innerText = Number(p28).toFixed(2);
+
+                    // Ratios
+                    var ratios = d.mix_ratios || d.MixRatios || {};
+                    var w_c = ratios.water_cement_ratio !== undefined ? ratios.water_cement_ratio : (ratios.WaterCementRatio !== undefined ? ratios.WaterCementRatio : 0);
+                    var w_b = ratios.water_binder_ratio !== undefined ? ratios.water_binder_ratio : (ratios.WaterBinderRatio !== undefined ? ratios.WaterBinderRatio : 0);
+                    var totalCement = ratios.total_cementitious_content_kg_m3 !== undefined ? ratios.total_cementitious_content_kg_m3 : (ratios.TotalCementitiousContentKgM3 !== undefined ? ratios.TotalCementitiousContentKgM3 : 0);
+                    var scmPct = ratios.scm_replacement_percentage !== undefined ? ratios.scm_replacement_percentage : (ratios.ScmReplacementPercentage !== undefined ? ratios.ScmReplacementPercentage : 0);
+                    var totalMass = ratios.total_mass_kg_m3 !== undefined ? ratios.total_mass_kg_m3 : (ratios.TotalMassKgM3 !== undefined ? ratios.TotalMassKgM3 : 0);
+
+                    document.getElementById("ratioAc").innerText = Number(w_c).toFixed(4);
+                    document.getElementById("ratioAb").innerText = Number(w_b).toFixed(4);
+                    document.getElementById("ratioCementante").innerText = Number(totalCement).toFixed(1) + " kg/m³";
+                    document.getElementById("ratioScm").innerText = Number(scmPct).toFixed(2) + " %";
+                    document.getElementById("ratioMasa").innerText = Number(totalMass).toFixed(1) + " kg/m³";
+                    document.getElementById("badgeLatencia").innerText = (res.latencyMs || 0) + " ms";
+
+                    // Metadatos
+                    var meta = d.metadata || d.Metadata || {};
+                    document.getElementById("metaModelo").innerText = meta.model_type || meta.ModelType || "VotingEnsemble";
+                    document.getElementById("metaId").innerText = meta.model_id || meta.ModelId || "wheat_cheese_4swj34tkjn_11";
+                    var sha = meta.model_sha256 || meta.ModelSha256 || "";
+                    if (sha) {
+                        document.getElementById("metaSha").innerText = sha.substring(0, 12) + "...";
+                        document.getElementById("metaSha").title = sha;
+                    }
+
+                    // Advertencias
+                    var contAdv = document.getElementById("contenedorAdvertencias");
+                    var listaAdv = document.getElementById("listaAdvertencias");
+                    listaAdv.innerHTML = "";
+
+                    var warnings = d.warnings || d.Warnings || [];
+                    if (warnings.length > 0) {
+                        contAdv.classList.remove("d-none");
+                        warnings.forEach(function (w) {
+                            var code = w.code || w.Code || "";
+                            var field = w.field || w.Field || "";
+                            var boundary = w.reference_boundary || w.ReferenceBoundary || "";
+                            var message = w.message || w.Message || "";
+
+                            var div = document.createElement("div");
+                            div.className = "alert alert-warning py-2 px-3 small mb-2 border-warning";
+                            div.innerHTML = "<strong>[" + code + "] " + field + " (Límite: " + boundary + ")</strong><div>" + message + "</div>";
+                            listaAdv.appendChild(div);
+                        });
+                    } else {
+                        contAdv.classList.add("d-none");
+                    }
+
+                    panelResultados.classList.remove("d-none");
+                } else {
+                    panelError.classList.remove("d-none");
+                    document.getElementById("txtErrorMensaje").innerText = res.message || res.error || "Error al procesar la solicitud.";
+
+                    var listaCampos = document.getElementById("listaErroresCampos");
+                    listaCampos.innerHTML = "";
+
+                    var details = res.details || res.Details || res.problemDetails;
+                    var invalidFields = (details && (details.invalid_fields || details.InvalidFields)) ? (details.invalid_fields || details.InvalidFields) : null;
+
+                    if (invalidFields && invalidFields.length > 0) {
+                        listaCampos.classList.remove("d-none");
+                        var ul = document.createElement("ul");
+                        ul.className = "small mb-0 text-danger";
+                        invalidFields.forEach(function (f) {
+                            var fName = f.field || f.Field || "";
+                            var fMsg = f.message || f.Message || "";
+                            var li = document.createElement("li");
+                            li.innerHTML = "<strong>" + fName + ":</strong> " + fMsg;
+                            ul.appendChild(li);
+                        });
+                        listaCampos.appendChild(ul);
+                    } else if (res.validationErrors && res.validationErrors.length > 0) {
+                        listaCampos.classList.remove("d-none");
+                        var ul2 = document.createElement("ul");
+                        ul2.className = "small mb-0 text-danger";
+                        res.validationErrors.forEach(function (err) {
+                            var li2 = document.createElement("li");
+                            li2.innerText = err;
+                            ul2.appendChild(li2);
+                        });
+                        listaCampos.appendChild(ul2);
+                    } else {
+                        listaCampos.classList.add("d-none");
+                    }
+                }
+            })
+            .catch(function (err) {
+                panelCarga.classList.add("d-none");
+                btnSimular.disabled = false;
+                panelError.classList.remove("d-none");
+                document.getElementById("txtErrorMensaje").innerText = "Error de comunicación con el servidor local: " + err.message;
+            });
+        });
+    });
+</script>

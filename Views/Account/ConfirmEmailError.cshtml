@@ -1,0 +1,24 @@
+﻿﻿@{
+    ViewBag.Title = "Error de confirmación";
+    string errorMessage = ViewBag.ErrorMessage as string ?? "El token de confirmación es inválido o ha expirado.";
+}
+
+<div class="row justify-content-center my-4">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0 text-center p-4">
+            <div class="card-body">
+                <div class="display-4 text-danger mb-3">✕</div>
+                <h1 class="h3 fw-bold mb-3 text-danger">No se pudo confirmar el correo</h1>
+                <div class="alert alert-danger my-4" role="alert">
+                    @errorMessage
+                </div>
+                <p class="text-secondary small mb-4">
+                    Por motivos de seguridad, los enlaces de activación tienen un tiempo de expiración limitado y solo pueden utilizarse una única vez.
+                </p>
+                <div class="d-grid gap-2 col-md-8 mx-auto">
+                    <a href="@Url.Action("Index", "Home")" class="btn btn-outline-secondary">Volver al inicio</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

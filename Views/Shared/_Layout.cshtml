@@ -11,7 +11,19 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@(string.IsNullOrWhiteSpace(ViewBag.Title as string) ? "EcoMix IA — Plataforma de Concreto Ecológico" : ViewBag.Title + " · EcoMix IA")</title>
+    @{
+        string pageTitle = ViewBag.Title as string;
+        string fullTitle;
+        if (string.IsNullOrWhiteSpace(pageTitle) || pageTitle == "Inicio" || pageTitle.StartsWith("EcoMix IA"))
+        {
+            fullTitle = (pageTitle == "Inicio" || string.IsNullOrWhiteSpace(pageTitle)) ? "EcoMix IA — Inicio" : pageTitle;
+        }
+        else
+        {
+            fullTitle = pageTitle + " — EcoMix IA";
+        }
+    }
+    <title>@Html.Raw(fullTitle)</title>
 
     <!-- Metadatos de diseño e ingeniería -->
     <meta name="description" content="EcoMix IA: Plataforma para el diseño, simulación con Machine Learning y optimización de mezclas de concreto ecológico con indicadores de sostenibilidad y costo." />
@@ -25,15 +37,15 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
 
     <!-- Estilos de identidad visual EcoMix IA -->
-    <link href="@Url.Content("~/Content/site.css")" rel="stylesheet" />
+    <link href="@Url.Content("~/Content/site.css?v=20261109_fase3_v3")" rel="stylesheet" />
 </head>
 <body class="d-flex flex-column min-vh-100">
-    <!-- Enlace de accesibilidad para lectores de pantalla / navegación por teclado -->
-    <a href="#contenidoPrincipal" class="ecomix-skip-link">Saltar al contenido principal</a>
+    <!-- Enlace de accesibilidad para lectores de pantalla / navegación por teclado (Tarea 2) -->
+    <a href="#contenidoPrincipal" class="visually-hidden-focusable ecomix-skip-link">Saltar al contenido principal</a>
 
     <!-- Barra de navegación principal responsive -->
     <header>
-        <nav class="navbar navbar-expand-lg navbar-dark ecomix-nav sticky-top" role="navigation" aria-label="Navegación principal de EcoMix IA">
+        <nav class="navbar navbar-expand-lg navbar-dark ecomix-nav sticky-top" data-bs-theme="dark" role="navigation" aria-label="Navegación principal de EcoMix IA">
             <div class="container">
                 <!-- Marca oficial e identidad visual -->
                 <a href="@Url.Action("Index", "Home")" class="navbar-brand ecomix-brand d-flex align-items-center gap-2" title="EcoMix IA — Inicio">
@@ -76,19 +88,46 @@
                         </li>
                     </ul>
 
-                    <!-- Indicador de entorno / Estado del prototipo (D-10) -->
-                    <div class="d-flex align-items-center gap-2 pt-2 pt-lg-0 border-top border-lg-0 mt-2 mt-lg-0 border-secondary-subtle">
-                        <span class="badge ecomix-mode-pill d-inline-flex align-items-center gap-1" title="Entorno verificado: SQL Server LocalDB">
-                            <i class="bi bi-shield-check text-success" aria-hidden="true"></i>
-                            <span>Demostración Local</span>
-                        </span>
+                    <!-- Menú de autenticación / Estado de sesión (Tarea 1) -->
+                    <div class="d-flex align-items-center pt-2 pt-lg-0 border-top border-lg-0 mt-2 mt-lg-0 border-secondary-subtle">
+                        @if (Request.IsAuthenticated)
+                        {
+                            <div class="d-flex align-items-center flex-wrap gap-2 ecomix-user-menu">
+                                <span class="ecomix-user-info d-inline-flex align-items-center gap-1 text-white" title="@User.Identity.Name">
+                                    <i class="bi bi-person-circle fs-6 text-white" aria-hidden="true"></i>
+                                    <span class="ecomix-user-email text-truncate">@User.Identity.Name</span>
+                                </span>
+                                <span class="ecomix-badge-registrado">Registrado</span>
+                                @using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { id = "logoutForm", @class = "d-inline m-0 p-0" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm ecomix-btn-logout" title="Cerrar sesión">
+                                        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                                        <span>Salir</span>
+                                    </button>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="d-flex align-items-center gap-2 ecomix-anon-menu">
+                                <a href="@Url.Action("Login", "Account")" class="btn btn-sm ecomix-btn-login">
+                                    <i class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i>
+                                    <span>Ingresar</span>
+                                </a>
+                                <a href="@Url.Action("Register", "Account")" class="btn btn-sm ecomix-btn-register">
+                                    <i class="bi bi-person-plus me-1" aria-hidden="true"></i>
+                                    <span>Registrarse</span>
+                                </a>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
         </nav>
     </header>
 
-    <!-- Contenedor principal de vistas -->
+    <!-- Contenedor principal de vistas (Tarea 3: footer inferior extenso retirado) -->
     <main id="contenidoPrincipal" class="container my-4 flex-grow-1" role="main">
         <!-- Notificaciones y mensajes de retroalimentación TempData -->
         @if (TempData["Mensaje"] != null)
@@ -110,74 +149,6 @@
 
         @RenderBody()
     </main>
-
-    <!-- Pie de página institucional y ético (D-05) -->
-    <footer class="ecomix-footer mt-auto" role="contentinfo">
-        <div class="container py-4">
-            <div class="row g-4">
-                <!-- Columna 1: Identidad del producto -->
-                <div class="col-12 col-md-5 mb-3 mb-md-0">
-                    <div class="ecomix-footer-brand d-flex align-items-center gap-2 mb-2">
-                        <i class="bi bi-layers-half text-success fs-5" aria-hidden="true"></i>
-                        <span class="fw-bold">EcoMix <span class="ecomix-brand-accent">IA</span></span>
-                        <span class="badge ecomix-footer-badge">v1.1</span>
-                    </div>
-                    <p class="ecomix-footer-desc mb-2">
-                        Sistema inteligente para el diseño, simulación con Machine Learning y optimización
-                        multiobjetivo de mezclas de concreto ecológico con reducción de huella de carbono.
-                    </p>
-                    <div class="ecomix-footer-meta small">
-                        <span>Universidad Privada de Tacna &middot; Facultad de Ingeniería</span><br />
-                        <span>Escuela Profesional de Ingeniería de Sistemas &middot; Web II (2026)</span>
-                    </div>
-                </div>
-
-                <!-- Columna 2: Navegación rápida -->
-                <div class="col-6 col-md-3 mb-3 mb-md-0">
-                    <h6 class="ecomix-footer-heading">Navegación</h6>
-                    <ul class="ecomix-footer-links">
-                        <li><a href="@Url.Action("Index", "Home")" class="ecomix-footer-link"><i class="bi bi-chevron-right me-1 small" aria-hidden="true"></i>Inicio</a></li>
-                        <li><a href="@Url.Action("Index", "Materiales")" class="ecomix-footer-link"><i class="bi bi-chevron-right me-1 small" aria-hidden="true"></i>Materiales</a></li>
-                        <li><a href="@Url.Action("Index", "Mezclas")" class="ecomix-footer-link"><i class="bi bi-chevron-right me-1 small" aria-hidden="true"></i>Mezclas Diseñadas</a></li>
-                        <li><a href="@Url.Action("Simulador", "Mezclas")" class="ecomix-footer-link"><i class="bi bi-chevron-right me-1 small" aria-hidden="true"></i>Simulador IA</a></li>
-                    </ul>
-                </div>
-
-                <!-- Columna 3: Información técnica y marco normativo -->
-                <div class="col-6 col-md-4 mb-3 mb-md-0">
-                    <h6 class="ecomix-footer-heading">Marco de Ingeniería</h6>
-                    <ul class="ecomix-footer-links">
-                        <li><span class="text-secondary small"><i class="bi bi-check2-circle me-1 text-success" aria-hidden="true"></i>Normas de referencia ACI 211.1 / ASTM C39</span></li>
-                        <li><span class="text-secondary small"><i class="bi bi-check2-circle me-1 text-success" aria-hidden="true"></i>Predicción de resistencia mediante modelo ML AutoML VotingEnsemble</span></li>
-                        <li><span class="text-secondary small"><i class="bi bi-check2-circle me-1 text-success" aria-hidden="true"></i>Evaluación de costos y emisiones de CO₂ por m³</span></li>
-                        <li><span class="text-secondary small"><i class="bi bi-check2-circle me-1 text-success" aria-hidden="true"></i>Insumos y parámetros con enfoque regional del sur del Perú</span></li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Descargo ético y legal (D-05) -->
-            <div class="ecomix-disclaimer mt-3 p-3 rounded-2">
-                <div class="d-flex align-items-start gap-2">
-                    <i class="bi bi-info-circle text-secondary flex-shrink-0 mt-1" aria-hidden="true"></i>
-                    <div>
-                        <strong>Aviso técnico y académico (D-05):</strong> EcoMix IA es un prototipo desarrollado con fines de investigación académica en la Universidad Privada de Tacna. Los parámetros de materiales toman inspiración geológica y técnica de insumos disponibles en el sur del Perú (Tacna/Arequipa); no existe relación de patrocinio, comercial o afiliación oficial con Cementos Yura S.A. ni con terceras empresas del sector.
-                    </div>
-                </div>
-            </div>
-
-            <!-- Barra inferior de copyright -->
-            <div class="ecomix-footer-bottom border-top mt-3 pt-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
-                <div>
-                    &copy; @DateTime.Now.Year EcoMix IA &middot; Universidad Privada de Tacna. Proyecto de titulación académica.
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-dark border border-secondary text-secondary">Fase 1: Portal Público</span>
-                    <span class="text-secondary">&middot;</span>
-                    <span class="text-secondary">v1.1</span>
-                </div>
-            </div>
-        </div>
-    </footer>
 
     <!-- Bootstrap 5 JavaScript Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -36,18 +36,26 @@ namespace EcomixIA.Models
         [Display(Name = "Notas")]
         public string Notas { get; set; }
 
+        /// <summary>
+        /// Identificador del usuario propietario en AspNetUsers (Fase 3: Mezclas Privadas).
+        /// Nullable para mantener aisladas las fórmulas legadas de Fase 1 bajo Safe Denial.
+        /// </summary>
+        [StringLength(128)]
+        [Display(Name = "Propietario")]
+        public string OwnerUserId { get; set; }
+
         public virtual ICollection<MezclaComponente> Componentes { get; set; } = new List<MezclaComponente>();
 
         [NotMapped]
         [Display(Name = "Costo por m³")]
-        public decimal CostoPorM3 => Componentes.Sum(c => c.Cantidad * c.Material.CostoPorKg);
+        public decimal CostoPorM3 => Componentes?.Any() == true ? Componentes.Sum(c => c.Cantidad * (c.Material != null ? c.Material.CostoPorKg : 0m)) : 0m;
 
         [NotMapped]
         [Display(Name = "CO₂ por m³")]
-        public decimal Co2PorM3 => Componentes.Sum(c => c.Cantidad * c.Material.Co2PorKg);
+        public decimal Co2PorM3 => Componentes?.Any() == true ? Componentes.Sum(c => c.Cantidad * (c.Material != null ? c.Material.Co2PorKg : 0m)) : 0m;
 
         [NotMapped]
         [Display(Name = "Masa total por m³ (kg)")]
-        public decimal MasaTotalPorM3 => Componentes.Sum(c => c.Cantidad);
+        public decimal MasaTotalPorM3 => Componentes?.Any() == true ? Componentes.Sum(c => c.Cantidad) : 0m;
     }
 }

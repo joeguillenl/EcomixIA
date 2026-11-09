@@ -1,5 +1,5 @@
-﻿@{
-    ViewBag.Title = "EcoMix IA — Plataforma de Concreto Sostenible";
+﻿﻿﻿@{
+    ViewBag.Title = "EcoMix IA — Inicio";
 }
 
 <!-- ==========================================================================
@@ -31,10 +31,6 @@
             <a href="@Url.Action("Simulador", "Mezclas")" class="btn btn-outline-ecomix-light btn-lg px-4 py-2 fw-semibold">
                 <i class="bi bi-cpu me-2" aria-hidden="true"></i>Explorar simulador IA
             </a>
-        </div>
-        <div class="mt-3 text-slate-300 small d-flex align-items-center gap-2">
-            <i class="bi bi-shield-check text-success" aria-hidden="true"></i>
-            <span>Acceso en modo demostración local verificado (sin autenticación requerida en Fase 1).</span>
         </div>
     </div>
 </section>
@@ -241,63 +237,10 @@
         </div>
     </div>
 
-    <!-- Aclaración de alcance técnico del flujo -->
-    <div class="alert alert-light border mt-4 p-3 rounded-3 text-secondary small d-flex align-items-start gap-2">
-        <i class="bi bi-info-circle text-primary fs-5 flex-shrink-0 mt-1" aria-hidden="true"></i>
-        <div>
-            <strong>Diferenciación metodológica:</strong> Los indicadores de costo y huella de carbono se determinan mediante fórmulas aritméticas y balances de masa a partir de los datos registrados de cada material. Las resistencias a compresión corresponden a predicciones estadísticas inferidas por el modelo ML AutoML VotingEnsemble. El prototipo actual asiste en la evaluación técnica de fórmulas propuestas y no incluye optimización heurística automática autónoma ni sustituye pruebas físicas de probetas.
-        </div>
-    </div>
-</section>
-
-<!-- ==========================================================================
-     SECCIÓN 4: PROPÓSITO ACADÉMICO Y AMBIENTAL (ETAPA 5)
-     ========================================================================== -->
-<section id="proposito-academico" class="mb-4 pt-3" aria-labelledby="proposito-title">
-    <div class="academic-card shadow-sm border p-4 p-md-5 rounded-3">
-        <div class="row g-4 align-items-center">
-            <div class="col-lg-8">
-                <div class="d-inline-flex align-items-center gap-2 mb-2">
-                    <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle fw-semibold">
-                        Investigación Formativa
-                    </span>
-                    <span class="text-secondary small">&middot;</span>
-                    <span class="text-secondary small fw-medium">Ingeniería de Sistemas e Ingeniería Civil</span>
-                </div>
-                <h2 id="proposito-title" class="h3 fw-bold text-navy-dark mb-3">
-                    Propósito académico y ambiental de EcoMix IA
-                </h2>
-                <p class="text-secondary mb-3">
-                    EcoMix IA es un proyecto desarrollado en la <strong>Universidad Privada de Tacna</strong> (Facultad de Ingeniería, Escuela Profesional de Ingeniería de Sistemas) orientado al estudio, formulación y análisis preliminar de mezclas de concreto ecológico.
-                </p>
-                <p class="text-secondary mb-3">
-                    El sistema promueve la reducción del impacto ambiental en la construcción regional mediante la evaluación de formulaciones que incorporan adiciones minerales y puzolanas, evaluando el equilibrio entre desempeño mecánico, costo económico y mitigación de gases de efecto invernadero (GEI).
-                </p>
-
-                <!-- Nota de alcance obligatoria -->
-                <div class="scope-note p-3 rounded-2 border">
-                    <div class="d-flex align-items-start gap-2">
-                        <i class="bi bi-exclamation-triangle-fill text-warning flex-shrink-0 mt-1" aria-hidden="true"></i>
-                        <div>
-                            <strong>Nota de alcance técnico:</strong> Las estimaciones computacionales no sustituyen los ensayos de laboratorio ni las validaciones técnicas requeridas para aplicaciones estructurales conforme a las normas técnicas aplicables (NTP, ACI 211.1, ASTM C39).
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4 text-center">
-                <div class="p-4 rounded-3 bg-light border text-center">
-                    <div class="fs-1 text-success mb-2" aria-hidden="true">
-                        <i class="bi bi-mortarboard"></i>
-                    </div>
-                    <div class="fw-bold text-navy-dark mb-1">Universidad Privada de Tacna</div>
-                    <div class="small text-secondary mb-2">Facultad de Ingeniería &middot; 2026</div>
-                    <hr class="my-2" />
-                    <div class="small text-muted">
-                        Inspiración geológica regional (Tacna / Arequipa). Plataforma académica independiente (D-05).
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Nota discreta de prototipo académico (Tarea 4) -->
+    <div class="text-center mt-4 pt-2">
+        <p class="text-secondary small mb-0">
+            <i class="bi bi-info-circle me-1" aria-hidden="true"></i>EcoMix IA es un prototipo académico. Sus estimaciones son orientativas y no sustituyen ensayos de laboratorio.
+        </p>
     </div>
 </section>
