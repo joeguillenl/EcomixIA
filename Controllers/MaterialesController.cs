@@ -1,4 +1,5 @@
-﻿using System.Data.Entity;
+using System;
+using System.Data.Entity;
 using System.Linq;
 using System.Web.Mvc;
 using EcomixIA.Models;
@@ -7,14 +8,25 @@ namespace EcomixIA.Controllers
 {
     public class MaterialesController : Controller
     {
-        private readonly EcomixContext db = new EcomixContext();
+        private readonly EcomixContext db;
 
+        public MaterialesController() : this(new EcomixContext())
+        {
+        }
+
+        public MaterialesController(EcomixContext context)
+        {
+            this.db = context ?? throw new ArgumentNullException(nameof(context));
+        }
+
+        [AllowAnonymous]
         public ActionResult Index()
         {
             var materiales = db.Materiales.OrderBy(m => m.Tipo).ThenBy(m => m.Nombre).ToList();
             return View(materiales);
         }
 
+        [AllowAnonymous]
         public ActionResult Details(int? id)
         {
             var material = BuscarMaterial(id);
@@ -25,16 +37,27 @@ namespace EcomixIA.Controllers
             return View(material);
         }
 
+        [Authorize(Roles = "Administrador")]
         public ActionResult Create()
         {
+            if (User == null || !User.IsInRole("Administrador"))
+            {
+                return new HttpStatusCodeResult(403, "Acceso denegado: Se requiere rol de Administrador para crear materiales.");
+            }
             CargarTipos();
             return View(new Material());
         }
 
         [HttpPost]
+        [Authorize(Roles = "Administrador")]
         [ValidateAntiForgeryToken]
         public ActionResult Create([Bind(Include = "Nombre,Tipo,DensidadRelativa,CostoPorKg,Co2PorKg,Notas")] Material material)
         {
+            if (User == null || !User.IsInRole("Administrador"))
+            {
+                return new HttpStatusCodeResult(403, "Acceso denegado: Se requiere rol de Administrador para crear materiales.");
+            }
+
             if (!ModelState.IsValid)
             {
                 CargarTipos(material.Tipo);
@@ -47,8 +70,14 @@ namespace EcomixIA.Controllers
             return RedirectToAction("Index");
         }
 
+        [Authorize(Roles = "Administrador")]
         public ActionResult Edit(int? id)
         {
+            if (User == null || !User.IsInRole("Administrador"))
+            {
+                return new HttpStatusCodeResult(403, "Acceso denegado: Se requiere rol de Administrador para editar materiales.");
+            }
+
             var material = BuscarMaterial(id);
             if (material == null)
             {
@@ -59,9 +88,15 @@ namespace EcomixIA.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Administrador")]
         [ValidateAntiForgeryToken]
         public ActionResult Edit([Bind(Include = "Id,Nombre,Tipo,DensidadRelativa,CostoPorKg,Co2PorKg,Notas")] Material material)
         {
+            if (User == null || !User.IsInRole("Administrador"))
+            {
+                return new HttpStatusCodeResult(403, "Acceso denegado: Se requiere rol de Administrador para editar materiales.");
+            }
+
             if (!ModelState.IsValid)
             {
                 CargarTipos(material.Tipo);
@@ -74,8 +109,14 @@ namespace EcomixIA.Controllers
             return RedirectToAction("Index");
         }
 
+        [Authorize(Roles = "Administrador")]
         public ActionResult Delete(int? id)
         {
+            if (User == null || !User.IsInRole("Administrador"))
+            {
+                return new HttpStatusCodeResult(403, "Acceso denegado: Se requiere rol de Administrador para eliminar materiales.");
+            }
+
             var material = BuscarMaterial(id);
             if (material == null)
             {
@@ -86,9 +127,15 @@ namespace EcomixIA.Controllers
         }
 
         [HttpPost, ActionName("Delete")]
+        [Authorize(Roles = "Administrador")]
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
+            if (User == null || !User.IsInRole("Administrador"))
+            {
+                return new HttpStatusCodeResult(403, "Acceso denegado: Se requiere rol de Administrador para eliminar materiales.");
+            }
+
             var material = db.Materiales.Find(id);
             if (material == null)
             {

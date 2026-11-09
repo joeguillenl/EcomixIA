@@ -1,10 +1,14 @@
-﻿using System.Data.Entity;
+using System.Data.Entity;
 
 namespace EcomixIA.Models
 {
     public class EcomixContext : DbContext
     {
         public EcomixContext() : base("DefaultConnection")
+        {
+        }
+
+        public EcomixContext(string nameOrConnectionString) : base(nameOrConnectionString)
         {
         }
 

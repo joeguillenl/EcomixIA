@@ -365,6 +365,17 @@ FodyWeavers.xsd
 Web.Secrets.config
 *.secrets.config
 
+# Simulated Email Outbox
+App_Data/EmailOutbox/
+
+# Scratch directory
+scratch/
+
+# SQL Server Backups and Database files
+*.bak
+*.mdf
+*.ldf
+
 # Exported presentation binaries
 *.pptx
 *.pdf

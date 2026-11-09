@@ -1,0 +1,49 @@
+﻿@model EcomixIA.Models.LoginViewModel
+@{
+    ViewBag.Title = "Iniciar sesión";
+}
+
+<div class="row justify-content-center my-4">
+    <div class="col-12 col-md-8 col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white py-3">
+                <h1 class="h4 mb-0 fw-semibold"><i class="bi bi-box-arrow-in-right me-2"></i>Iniciar sesión</h1>
+            </div>
+            <div class="card-body p-4">
+                @using (Html.BeginForm("Login", "Account", new { ReturnUrl = ViewBag.ReturnUrl }, FormMethod.Post, new { role = "form", novalidate = "novalidate" }))
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+                    <div class="mb-3">
+                        @Html.LabelFor(m => m.Email, new { @class = "form-label fw-bold" })
+                        @Html.TextBoxFor(m => m.Email, new { @class = "form-control", placeholder = "usuario@virtual.upt.pe", autocomplete = "email", autofocus = "autofocus" })
+                        @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-danger small" })
+                    </div>
+
+                    <div class="mb-3">
+                        @Html.LabelFor(m => m.Password, new { @class = "form-label fw-bold" })
+                        @Html.PasswordFor(m => m.Password, new { @class = "form-control", placeholder = "Ingrese su contraseña", autocomplete = "current-password" })
+                        @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger small" })
+                    </div>
+
+                    <div class="mb-4 form-check">
+                        @Html.CheckBoxFor(m => m.RememberMe, new { @class = "form-check-input" })
+                        @Html.LabelFor(m => m.RememberMe, new { @class = "form-check-label text-secondary small" })
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">Ingresar</button>
+                    </div>
+                }
+            </div>
+            <div class="card-footer bg-light py-3 text-center small">
+                <span class="text-muted">¿Aún no tiene cuenta?</span>
+                <a href="@Url.Action("Register", "Account")" class="fw-semibold text-primary ms-1">Regístrese aquí</a>
+                <div class="mt-2">
+                    <a href="@Url.Action("Index", "Home")" class="text-secondary text-decoration-none">← Volver al inicio</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

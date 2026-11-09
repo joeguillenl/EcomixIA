@@ -1,0 +1,24 @@
+﻿@{
+    ViewBag.Title = "Registro deshabilitado";
+    string reason = ViewBag.DenialReason as string ?? "El registro de cuentas no está habilitado actualmente en este entorno.";
+}
+
+<div class="row justify-content-center my-4">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0 text-center p-4">
+            <div class="card-body">
+                <div class="display-4 text-warning mb-3">🔒</div>
+                <h1 class="h3 fw-bold mb-3">Registro no disponible</h1>
+                <div class="alert alert-warning my-4 text-start" role="alert">
+                    @reason
+                </div>
+                <p class="text-secondary small mb-4">
+                    La creación pública de cuentas se encuentra sujeta a la directiva de seguridad perimetral de EcoMix IA y está habilitada únicamente en entornos de prueba expresamente autorizados.
+                </p>
+                <div class="d-grid gap-2 col-md-8 mx-auto">
+                    <a href="@Url.Action("Index", "Home")" class="btn btn-outline-primary">Volver al inicio</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

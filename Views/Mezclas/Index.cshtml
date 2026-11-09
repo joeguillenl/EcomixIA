@@ -11,6 +11,14 @@
     </div>
 </div>
 
+@if (!string.IsNullOrEmpty(ViewBag.SafeDenialMessage as string))
+{
+    <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+        <i class="bi bi-shield-lock me-2"></i>
+        <div>@ViewBag.SafeDenialMessage</div>
+    </div>
+}
+
 <div class="table-panel">
     <div class="table-responsive">
         <table class="table table-hover mb-0">

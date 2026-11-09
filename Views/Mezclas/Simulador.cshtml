@@ -23,6 +23,14 @@
     </div>
 }
 
+@if (!string.IsNullOrEmpty(ViewBag.SafeDenialWarning as string))
+{
+    <div class="alert alert-warning py-2 px-3 small d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-shield-exclamation"></i>
+        <span>@ViewBag.SafeDenialWarning</span>
+    </div>
+}
+
 <!-- Presets de Pruebas Rápidas -->
 <div class="card shadow-sm border-0 mb-4 bg-light">
     <div class="card-body py-2 px-3">
@@ -218,7 +226,7 @@
                     </div>
                     <div class="col-6">
                         <div class="p-3 rounded-3 border bg-light text-center h-100">
-                            <span class="badge text-bg-success mb-2">Diseño Estructural</span>
+                            <span class="badge text-bg-success mb-2">Referencia a 28 Días</span>
                             <div class="text-secondary small fw-semibold">Resistencia a 28 días</div>
                             <div class="display-6 fw-bold text-success my-1" id="res28d">
                                 @(Model.Resultado?.Predictions?.Strength28dMpa.ToString("0.00") ?? "--")

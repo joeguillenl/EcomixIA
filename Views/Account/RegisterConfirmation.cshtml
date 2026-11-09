@@ -1,0 +1,35 @@
+﻿@{
+    ViewBag.Title = "Confirmación de registro";
+    string registeredEmail = ViewBag.RegisteredEmail as string ?? "su correo electrónico";
+}
+
+<div class="row justify-content-center my-4">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0 text-center p-4">
+            <div class="card-body">
+                <div class="display-4 text-success mb-3">✓</div>
+                <h1 class="h3 fw-bold mb-3">¡Registro iniciado con éxito!</h1>
+                <p class="lead text-muted mb-4">
+                    Hemos enviado un mensaje con un enlace de activación a:
+                </p>
+                <div class="p-3 bg-light rounded-3 mb-4 fw-bold text-primary">
+                    @registeredEmail
+                </div>
+                <p class="text-secondary small mb-4">
+                    Por favor revise su bandeja de entrada (o carpeta de spam) y haga clic en el enlace para confirmar su dirección de correo y activar su cuenta en EcoMix IA. El enlace tiene una validez de <strong>24 horas</strong>.
+                </p>
+
+                @if (!string.IsNullOrEmpty(ViewBag.EmailWarning as string))
+                {
+                    <div class="alert alert-warning small mb-4">
+                        @ViewBag.EmailWarning
+                    </div>
+                }
+
+                <div class="d-grid gap-2 col-md-8 mx-auto">
+                    <a href="@Url.Action("Index", "Home")" class="btn btn-outline-primary">Volver a la página principal</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

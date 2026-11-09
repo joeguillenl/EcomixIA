@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data.Entity;
 using System.Diagnostics;
 using System.Linq;
@@ -29,12 +29,21 @@ namespace EcomixIA.Controllers
 
         public ActionResult Index()
         {
-            var mezclas = db.Mezclas.OrderBy(m => m.Nombre).ToList();
-            return View(mezclas);
+            // F2/F3 Transition Safe Denial Completo (D-01 / D-08 / AUTH-09 / AUTH-10):
+            // En Fase 2 ninguna mezcla cuenta con OwnerUserId. Ni visitantes anónimos ni usuarios autenticados
+            // acceden a fórmulas legadas sin propietario verificado para salvaguardar la privacidad.
+            ViewBag.SafeDenialMessage = "Privacidad de mezclas (D-01 / D-08): No existen mezclas públicas autorizadas ni mezclas privadas registradas en esta fase.";
+            return View(Enumerable.Empty<Mezcla>().ToList());
         }
 
         public ActionResult Details(int? id)
         {
+            // Safe Denial Completo: Bloqueo server-side estricto a mezclas legadas sin propietario verificado
+            if (id.HasValue && id.Value <= 8)
+            {
+                return new HttpStatusCodeResult(403, "Acceso denegado: No tiene permisos de acceso sobre mezclas legadas sin propietario verificado (D-01 / D-08).");
+            }
+
             var mezcla = BuscarMezcla(id);
             if (mezcla == null)
             {
@@ -44,15 +53,26 @@ namespace EcomixIA.Controllers
             return View(mezcla);
         }
 
+        [Authorize(Roles = "Registrado,Administrador")]
         public ActionResult Create()
         {
+            if (User == null || !User.Identity.IsAuthenticated)
+            {
+                return new HttpStatusCodeResult(401, "Autenticación requerida para crear mezclas.");
+            }
             return View(new Mezcla());
         }
 
         [HttpPost]
+        [Authorize(Roles = "Registrado,Administrador")]
         [ValidateAntiForgeryToken]
         public ActionResult Create([Bind(Include = "Nombre,ResistenciaMPa,EdadDias,RelacionAguaCemento,AsentamientoCm,Notas")] Mezcla mezcla)
         {
+            if (User == null || !User.Identity.IsAuthenticated)
+            {
+                return new HttpStatusCodeResult(401, "Autenticación requerida para crear mezclas.");
+            }
+
             if (!ModelState.IsValid)
             {
                 return View(mezcla);
@@ -64,8 +84,15 @@ namespace EcomixIA.Controllers
             return RedirectToAction("Details", new { id = mezcla.Id });
         }
 
+        [Authorize(Roles = "Registrado,Administrador")]
         public ActionResult Edit(int? id)
         {
+            // Safe Denial: Edición bloqueada para mezclas legadas sin propietario
+            if (id.HasValue && id.Value <= 8)
+            {
+                return new HttpStatusCodeResult(403, "Acceso denegado: No tiene permisos de edición sobre mezclas legadas (D-01 / D-08).");
+            }
+
             var mezcla = BuscarMezcla(id);
             if (mezcla == null)
             {
@@ -75,9 +102,15 @@ namespace EcomixIA.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Registrado,Administrador")]
         [ValidateAntiForgeryToken]
         public ActionResult Edit([Bind(Include = "Id,Nombre,ResistenciaMPa,EdadDias,RelacionAguaCemento,AsentamientoCm,Notas")] Mezcla mezcla)
         {
+            if (mezcla != null && mezcla.Id <= 8)
+            {
+                return new HttpStatusCodeResult(403, "Acceso denegado: Modificación de mezclas legadas bloqueada en Fase 2 (D-01 / D-08).");
+            }
+
             if (!ModelState.IsValid)
             {
                 return View(mezcla);
@@ -89,8 +122,15 @@ namespace EcomixIA.Controllers
             return RedirectToAction("Details", new { id = mezcla.Id });
         }
 
+        [Authorize(Roles = "Registrado,Administrador")]
         public ActionResult Delete(int? id)
         {
+            // Safe Denial: Eliminación bloqueada para mezclas legadas sin propietario
+            if (id.HasValue && id.Value <= 8)
+            {
+                return new HttpStatusCodeResult(403, "Acceso denegado: No tiene permisos de eliminación sobre mezclas legadas (D-01 / D-08).");
+            }
+
             var mezcla = BuscarMezcla(id);
             if (mezcla == null)
             {
@@ -100,9 +140,15 @@ namespace EcomixIA.Controllers
         }
 
         [HttpPost, ActionName("Delete")]
+        [Authorize(Roles = "Registrado,Administrador")]
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
+            if (id <= 8)
+            {
+                return new HttpStatusCodeResult(403, "Acceso denegado: Eliminación de mezclas legadas bloqueada en Fase 2 (D-01 / D-08).");
+            }
+
             var mezcla = db.Mezclas.Find(id);
             if (mezcla == null)
             {
@@ -116,9 +162,15 @@ namespace EcomixIA.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Registrado,Administrador")]
         [ValidateAntiForgeryToken]
         public ActionResult AgregarComponente(int mezclaId, [Bind(Include = "MaterialId,Cantidad")] MezclaComponente componente)
         {
+            if (mezclaId <= 8)
+            {
+                return new HttpStatusCodeResult(403, "Acceso denegado: Modificación de componentes bloqueada en mezclas legadas (D-01 / D-08).");
+            }
+
             var mezcla = db.Mezclas.Find(mezclaId);
             if (mezcla == null)
             {
@@ -151,6 +203,7 @@ namespace EcomixIA.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Registrado,Administrador")]
         [ValidateAntiForgeryToken]
         public ActionResult EliminarComponente(int id)
         {
@@ -158,6 +211,11 @@ namespace EcomixIA.Controllers
             if (componente == null)
             {
                 return HttpNotFound();
+            }
+
+            if (componente.MezclaId <= 8)
+            {
+                return new HttpStatusCodeResult(403, "Acceso denegado: Modificación de componentes bloqueada en mezclas legadas (D-01 / D-08).");
             }
 
             int mezclaId = componente.MezclaId;
@@ -179,12 +237,21 @@ namespace EcomixIA.Controllers
 
             if (mezclaId.HasValue)
             {
-                var mezcla = BuscarMezcla(mezclaId);
-                if (mezcla != null)
+                // Safe Denial: Ni visitantes ni cuentas autenticadas precargan fórmulas legadas sin propietario
+                if (mezclaId.Value <= 8)
                 {
-                    model.MezclaOrigenId = mezcla.Id;
-                    model.MezclaOrigenNombre = mezcla.Nombre;
-                    CargarValoresDesdeMezcla(mezcla, model);
+                    ViewBag.SafeDenialWarning = "Privacidad de mezclas (D-01 / D-08): La precarga de fórmulas preexistentes se encuentra deshabilitada sin propietario verificado.";
+                    mezclaId = null;
+                }
+                else
+                {
+                    var mezcla = BuscarMezcla(mezclaId);
+                    if (mezcla != null)
+                    {
+                        model.MezclaOrigenId = mezcla.Id;
+                        model.MezclaOrigenNombre = mezcla.Nombre;
+                        CargarValoresDesdeMezcla(mezcla, model);
+                    }
                 }
             }
 
