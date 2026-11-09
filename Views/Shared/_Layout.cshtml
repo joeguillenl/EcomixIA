@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 @{
     string controlador = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     string accion = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
@@ -11,7 +11,19 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@(string.IsNullOrWhiteSpace(ViewBag.Title as string) ? "EcoMix IA — Plataforma de Concreto Ecológico" : ViewBag.Title + " · EcoMix IA")</title>
+    @{
+        string pageTitle = ViewBag.Title as string;
+        string fullTitle;
+        if (string.IsNullOrWhiteSpace(pageTitle) || pageTitle == "Inicio" || pageTitle.StartsWith("EcoMix IA"))
+        {
+            fullTitle = (pageTitle == "Inicio" || string.IsNullOrWhiteSpace(pageTitle)) ? "EcoMix IA — Inicio" : pageTitle;
+        }
+        else
+        {
+            fullTitle = pageTitle + " — EcoMix IA";
+        }
+    }
+    <title>@Html.Raw(fullTitle)</title>
 
     <!-- Metadatos de diseño e ingeniería -->
     <meta name="description" content="EcoMix IA: Plataforma para el diseño, simulación con Machine Learning y optimización de mezclas de concreto ecológico con indicadores de sostenibilidad y costo." />
@@ -25,7 +37,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
 
     <!-- Estilos de identidad visual EcoMix IA -->
-    <link href="@Url.Content("~/Content/site.css")" rel="stylesheet" />
+    <link href="@Url.Content("~/Content/site.css?v=20261109_fase3_v3")" rel="stylesheet" />
 </head>
 <body class="d-flex flex-column min-vh-100">
     <!-- Enlace de accesibilidad para lectores de pantalla / navegación por teclado (Tarea 2) -->

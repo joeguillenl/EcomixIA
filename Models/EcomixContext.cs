@@ -6,10 +6,12 @@ namespace EcomixIA.Models
     {
         public EcomixContext() : base("DefaultConnection")
         {
+            Database.SetInitializer<EcomixContext>(null);
         }
 
         public EcomixContext(string nameOrConnectionString) : base(nameOrConnectionString)
         {
+            Database.SetInitializer<EcomixContext>(null);
         }
 
         public DbSet<Material> Materiales { get; set; }
