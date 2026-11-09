@@ -361,3 +361,10 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Secret configuration files
+Web.Secrets.config
+*.secrets.config
+
+# Exported presentation binaries
+*.pptx
+*.pdf
