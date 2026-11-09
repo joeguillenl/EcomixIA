@@ -1,4 +1,4 @@
-@model EcomixIA.Models.ViewModels.SimuladorDosificacionViewModel
+﻿@model EcomixIA.Models.ViewModels.SimuladorDosificacionViewModel
 @{
     ViewBag.Title = "Simulador de Resistencia con IA";
 }
@@ -62,7 +62,7 @@
 
                     <div class="row g-3">
                         <div class="col-md-6">
-                            @Html.LabelFor(m => m.Cemento, new { @class = "form-label small fw-semibold" })
+                            @Html.LabelFor(m => m.Cemento, new { @class = "form-label small fw-semibold", @for = "inCemento" })
                             <div class="input-group">
                                 @Html.TextBoxFor(m => m.Cemento, new { @class = "form-control", type = "number", step = "any", id = "inCemento", oninput = "calcularTotales()" })
                                 <span class="input-group-text small">kg/m³</span>
@@ -71,7 +71,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            @Html.LabelFor(m => m.Agua, new { @class = "form-label small fw-semibold" })
+                            @Html.LabelFor(m => m.Agua, new { @class = "form-label small fw-semibold", @for = "inAgua" })
                             <div class="input-group">
                                 @Html.TextBoxFor(m => m.Agua, new { @class = "form-control", type = "number", step = "any", id = "inAgua", oninput = "calcularTotales()" })
                                 <span class="input-group-text small">kg/m³</span>
@@ -80,7 +80,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            @Html.LabelFor(m => m.EscoriaAltoHorno, new { @class = "form-label small fw-semibold" })
+                            @Html.LabelFor(m => m.EscoriaAltoHorno, new { @class = "form-label small fw-semibold", @for = "inEscoria" })
                             <div class="input-group">
                                 @Html.TextBoxFor(m => m.EscoriaAltoHorno, new { @class = "form-control", type = "number", step = "any", id = "inEscoria", oninput = "calcularTotales()" })
                                 <span class="input-group-text small">kg/m³</span>
@@ -89,7 +89,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            @Html.LabelFor(m => m.CenizaVolante, new { @class = "form-label small fw-semibold" })
+                            @Html.LabelFor(m => m.CenizaVolante, new { @class = "form-label small fw-semibold", @for = "inCeniza" })
                             <div class="input-group">
                                 @Html.TextBoxFor(m => m.CenizaVolante, new { @class = "form-control", type = "number", step = "any", id = "inCeniza", oninput = "calcularTotales()" })
                                 <span class="input-group-text small">kg/m³</span>
@@ -98,7 +98,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            @Html.LabelFor(m => m.AgregadoGrueso, new { @class = "form-label small fw-semibold" })
+                            @Html.LabelFor(m => m.AgregadoGrueso, new { @class = "form-label small fw-semibold", @for = "inGrueso" })
                             <div class="input-group">
                                 @Html.TextBoxFor(m => m.AgregadoGrueso, new { @class = "form-control", type = "number", step = "any", id = "inGrueso", oninput = "calcularTotales()" })
                                 <span class="input-group-text small">kg/m³</span>
@@ -107,7 +107,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            @Html.LabelFor(m => m.AgregadoFino, new { @class = "form-label small fw-semibold" })
+                            @Html.LabelFor(m => m.AgregadoFino, new { @class = "form-label small fw-semibold", @for = "inFino" })
                             <div class="input-group">
                                 @Html.TextBoxFor(m => m.AgregadoFino, new { @class = "form-control", type = "number", step = "any", id = "inFino", oninput = "calcularTotales()" })
                                 <span class="input-group-text small">kg/m³</span>
@@ -116,7 +116,7 @@
                         </div>
 
                         <div class="col-12">
-                            @Html.LabelFor(m => m.Superplastificante, new { @class = "form-label small fw-semibold" })
+                            @Html.LabelFor(m => m.Superplastificante, new { @class = "form-label small fw-semibold", @for = "inSp" })
                             <div class="input-group">
                                 @Html.TextBoxFor(m => m.Superplastificante, new { @class = "form-control", type = "number", step = "any", id = "inSp", oninput = "calcularTotales()" })
                                 <span class="input-group-text small">kg/m³</span>

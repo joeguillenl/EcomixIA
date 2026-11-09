@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using EcomixIA.Models.Dtos;
 
 namespace EcomixIA.Models.ViewModels

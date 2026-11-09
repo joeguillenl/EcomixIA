@@ -1,67 +1,188 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 @{
     string controlador = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     string accion = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
-    string claseInicio = controlador == "Home" ? "nav-link active" : "nav-link";
+    string claseInicio = (controlador == "Home" && accion == "Index") ? "nav-link active" : "nav-link";
     string claseMateriales = controlador == "Materiales" ? "nav-link active" : "nav-link";
     string claseMezclas = (controlador == "Mezclas" && accion != "Simulador") ? "nav-link active" : "nav-link";
-    string claseSimulador = (controlador == "Mezclas" && accion == "Simulador") ? "nav-link active text-success fw-semibold" : "nav-link";
+    string claseSimulador = (controlador == "Mezclas" && accion == "Simulador") ? "nav-link active nav-link-simulator" : "nav-link nav-link-simulator";
 }
 <html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewBag.Title - EcoMix IA</title>
+    <title>@(string.IsNullOrWhiteSpace(ViewBag.Title as string) ? "EcoMix IA — Plataforma de Concreto Ecológico" : ViewBag.Title + " · EcoMix IA")</title>
+
+    <!-- Metadatos de diseño e ingeniería -->
+    <meta name="description" content="EcoMix IA: Plataforma para el diseño, simulación con Machine Learning y optimización de mezclas de concreto ecológico con indicadores de sostenibilidad y costo." />
+    <meta name="theme-color" content="#0a1b30" />
+
+    <!-- Tipografía Inter y recursos CDN -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+
+    <!-- Estilos de identidad visual EcoMix IA -->
     <link href="@Url.Content("~/Content/site.css")" rel="stylesheet" />
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark ecomix-nav mb-4">
-        <div class="container">
-            @Html.ActionLink("EcoMix IA", "Index", "Home", null, new { @class = "navbar-brand ecomix-brand d-flex align-items-center gap-2" })
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal" aria-controls="menuPrincipal" aria-expanded="false" aria-label="Menú">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="menuPrincipal">
-                <div class="navbar-nav ms-auto gap-1">
-                    @Html.ActionLink("Inicio", "Index", "Home", null, new { @class = claseInicio })
-                    @Html.ActionLink("Materiales", "Index", "Materiales", null, new { @class = claseMateriales })
-                    @Html.ActionLink("Mezclas", "Index", "Mezclas", null, new { @class = claseMezclas })
-                    @Html.ActionLink("Simulador IA", "Simulador", "Mezclas", null, new { @class = claseSimulador })
+<body class="d-flex flex-column min-vh-100">
+    <!-- Enlace de accesibilidad para lectores de pantalla / navegación por teclado -->
+    <a href="#contenidoPrincipal" class="ecomix-skip-link">Saltar al contenido principal</a>
+
+    <!-- Barra de navegación principal responsive -->
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark ecomix-nav sticky-top" role="navigation" aria-label="Navegación principal de EcoMix IA">
+            <div class="container">
+                <!-- Marca oficial e identidad visual -->
+                <a href="@Url.Action("Index", "Home")" class="navbar-brand ecomix-brand d-flex align-items-center gap-2" title="EcoMix IA — Inicio">
+                    <span class="ecomix-brand-icon">
+                        <i class="bi bi-layers-half text-white" aria-hidden="true"></i>
+                    </span>
+                    <span class="ecomix-brand-text">
+                        EcoMix <span class="ecomix-brand-accent">IA</span>
+                    </span>
+                    <span class="badge ecomix-brand-badge ms-1 d-none d-sm-inline-block">Concretos Sostenibles</span>
+                </a>
+
+                <!-- Botón colapsable para dispositivos móviles -->
+                <button class="navbar-toggler ecomix-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal" aria-controls="menuPrincipal" aria-expanded="false" aria-label="Alternar navegación principal">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Menú de navegación principal -->
+                <div class="collapse navbar-collapse" id="menuPrincipal">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 ecomix-nav-items ps-lg-3">
+                        <li class="nav-item">
+                            <a href="@Url.Action("Index", "Home")" class="@claseInicio">
+                                <i class="bi bi-house-door me-1 d-lg-none" aria-hidden="true"></i>Inicio
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="@Url.Action("Index", "Materiales")" class="@claseMateriales">
+                                <i class="bi bi-box-seam me-1 d-lg-none" aria-hidden="true"></i>Materiales
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="@Url.Action("Index", "Mezclas")" class="@claseMezclas">
+                                <i class="bi bi-stack me-1 d-lg-none" aria-hidden="true"></i>Mezclas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="@Url.Action("Simulador", "Mezclas")" class="@claseSimulador">
+                                <i class="bi bi-cpu me-1" aria-hidden="true"></i>Simulador IA
+                            </a>
+                        </li>
+                    </ul>
+
+                    <!-- Indicador de entorno / Estado del prototipo (D-10) -->
+                    <div class="d-flex align-items-center gap-2 pt-2 pt-lg-0 border-top border-lg-0 mt-2 mt-lg-0 border-secondary-subtle">
+                        <span class="badge ecomix-mode-pill d-inline-flex align-items-center gap-1" title="Entorno verificado: SQL Server LocalDB">
+                            <i class="bi bi-shield-check text-success" aria-hidden="true"></i>
+                            <span>Demostración Local</span>
+                        </span>
+                    </div>
                 </div>
             </div>
-        </div>
-    </nav>
+        </nav>
+    </header>
 
-    <main class="container pb-2">
+    <!-- Contenedor principal de vistas -->
+    <main id="contenidoPrincipal" class="container my-4 flex-grow-1" role="main">
+        <!-- Notificaciones y mensajes de retroalimentación TempData -->
         @if (TempData["Mensaje"] != null)
         {
-            <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
-                <i class="bi bi-check-circle-fill"></i>
-                <span>@TempData["Mensaje"]</span>
-                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm ecomix-alert" role="alert">
+                <i class="bi bi-check-circle-fill fs-5 text-success flex-shrink-0" aria-hidden="true"></i>
+                <div class="flex-grow-1">@TempData["Mensaje"]</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar notificación"></button>
             </div>
         }
         @if (TempData["Error"] != null)
         {
-            <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <span>@TempData["Error"]</span>
-                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm ecomix-alert" role="alert">
+                <i class="bi bi-exclamation-triangle-fill fs-5 text-danger flex-shrink-0" aria-hidden="true"></i>
+                <div class="flex-grow-1">@TempData["Error"]</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar notificación"></button>
             </div>
         }
 
         @RenderBody()
     </main>
 
-    <footer class="container ecomix-footer">
-        EcoMix IA · Diseño de mezclas de concreto con menor costo y huella de CO₂
+    <!-- Pie de página institucional y ético (D-05) -->
+    <footer class="ecomix-footer mt-auto" role="contentinfo">
+        <div class="container py-4">
+            <div class="row g-4">
+                <!-- Columna 1: Identidad del producto -->
+                <div class="col-12 col-md-5 mb-3 mb-md-0">
+                    <div class="ecomix-footer-brand d-flex align-items-center gap-2 mb-2">
+                        <i class="bi bi-layers-half text-success fs-5" aria-hidden="true"></i>
+                        <span class="fw-bold">EcoMix <span class="ecomix-brand-accent">IA</span></span>
+                        <span class="badge ecomix-footer-badge">v1.1</span>
+                    </div>
+                    <p class="ecomix-footer-desc mb-2">
+                        Sistema inteligente para el diseño, simulación con Machine Learning y optimización
+                        multiobjetivo de mezclas de concreto ecológico con reducción de huella de carbono.
+                    </p>
+                    <div class="ecomix-footer-meta small">
+                        <span>Universidad Privada de Tacna &middot; Facultad de Ingeniería</span><br />
+                        <span>Escuela Profesional de Ingeniería de Sistemas &middot; Web II (2026)</span>
+                    </div>
+                </div>
+
+                <!-- Columna 2: Navegación rápida -->
+                <div class="col-6 col-md-3 mb-3 mb-md-0">
+                    <h6 class="ecomix-footer-heading">Navegación</h6>
+                    <ul class="ecomix-footer-links">
+                        <li><a href="@Url.Action("Index", "Home")" class="ecomix-footer-link"><i class="bi bi-chevron-right me-1 small" aria-hidden="true"></i>Inicio</a></li>
+                        <li><a href="@Url.Action("Index", "Materiales")" class="ecomix-footer-link"><i class="bi bi-chevron-right me-1 small" aria-hidden="true"></i>Materiales</a></li>
+                        <li><a href="@Url.Action("Index", "Mezclas")" class="ecomix-footer-link"><i class="bi bi-chevron-right me-1 small" aria-hidden="true"></i>Mezclas Diseñadas</a></li>
+                        <li><a href="@Url.Action("Simulador", "Mezclas")" class="ecomix-footer-link"><i class="bi bi-chevron-right me-1 small" aria-hidden="true"></i>Simulador IA</a></li>
+                    </ul>
+                </div>
+
+                <!-- Columna 3: Información técnica y marco normativo -->
+                <div class="col-6 col-md-4 mb-3 mb-md-0">
+                    <h6 class="ecomix-footer-heading">Marco de Ingeniería</h6>
+                    <ul class="ecomix-footer-links">
+                        <li><span class="text-secondary small"><i class="bi bi-check2-circle me-1 text-success" aria-hidden="true"></i>Normas de referencia ACI 211.1 / ASTM C39</span></li>
+                        <li><span class="text-secondary small"><i class="bi bi-check2-circle me-1 text-success" aria-hidden="true"></i>Predicción de resistencia mediante modelo ML AutoML VotingEnsemble</span></li>
+                        <li><span class="text-secondary small"><i class="bi bi-check2-circle me-1 text-success" aria-hidden="true"></i>Evaluación de costos y emisiones de CO₂ por m³</span></li>
+                        <li><span class="text-secondary small"><i class="bi bi-check2-circle me-1 text-success" aria-hidden="true"></i>Insumos y parámetros con enfoque regional del sur del Perú</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Descargo ético y legal (D-05) -->
+            <div class="ecomix-disclaimer mt-3 p-3 rounded-2">
+                <div class="d-flex align-items-start gap-2">
+                    <i class="bi bi-info-circle text-secondary flex-shrink-0 mt-1" aria-hidden="true"></i>
+                    <div>
+                        <strong>Aviso técnico y académico (D-05):</strong> EcoMix IA es un prototipo desarrollado con fines de investigación académica en la Universidad Privada de Tacna. Los parámetros de materiales toman inspiración geológica y técnica de insumos disponibles en el sur del Perú (Tacna/Arequipa); no existe relación de patrocinio, comercial o afiliación oficial con Cementos Yura S.A. ni con terceras empresas del sector.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Barra inferior de copyright -->
+            <div class="ecomix-footer-bottom border-top mt-3 pt-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+                <div>
+                    &copy; @DateTime.Now.Year EcoMix IA &middot; Universidad Privada de Tacna. Proyecto de titulación académica.
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-dark border border-secondary text-secondary">Fase 1: Portal Público</span>
+                    <span class="text-secondary">&middot;</span>
+                    <span class="text-secondary">v1.1</span>
+                </div>
+            </div>
+        </div>
     </footer>
 
+    <!-- Bootstrap 5 JavaScript Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Renderizado condicional de scripts por vista -->
+    @RenderSection("scripts", required: false)
 </body>
 </html>

@@ -126,6 +126,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\site.css" />
+    <Content Include="Content\images\carousel\01-innovacion-concreto.webp" />
+    <Content Include="Content\images\carousel\02-materiales-sostenibles.webp" />
+    <Content Include="Content\images\carousel\03-resistencia-concreto.webp" />
+    <Content Include="Content\images\carousel\README.md" />
     <Content Include="Views\_ViewStart.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Views\Materiales\Create.cshtml" />
@@ -154,6 +158,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
+    <Folder Include="Content\images\carousel\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
