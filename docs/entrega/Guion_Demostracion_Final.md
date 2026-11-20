@@ -59,7 +59,7 @@ Antes de iniciar la presentación, verifique que la base de datos `EcomixIA` est
   3. **Resultados en Tiempo Real:**
      - Mostrar predicción de resistencia a 7 días y 28 días (MPa).
      - Ratios analíticos calculados por el modelo (w/c, w/b, % sustitución puzolánica).
-     - Gráfico comparativo interactivo generado con Chart.js (RF-18).
+     - Gráfico comparativo visual interactivo generado con SVG nativo accesible (RF-18).
      - Métricas ecológicas inmediatas: Reducción de CO₂ estimada frente a una mezcla tradicional patrón.
 
 ---
