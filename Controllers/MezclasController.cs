@@ -225,8 +225,19 @@ namespace EcomixIA.Controllers
             return RedirectToAction("Index");
         }
 
-        // GET or POST: Mezclas/Duplicar/5 (Fase 3: Clonación de fórmula propia)
+        // GET: Mezclas/Duplicar/5 (Rechazo seguro de mutación por GET - H02-E)
+        [HttpGet]
         [Authorize(Roles = "Registrado,Administrador")]
+        public ActionResult Duplicar(int? id)
+        {
+            TempData["Error"] = "La duplicación de mezclas requiere envío seguro mediante solicitud POST.";
+            return RedirectToAction("Index");
+        }
+
+        // POST: Mezclas/Duplicar/5 (Fase 3/4: Clonación transaccional de fórmula propia con snapshots preservados)
+        [HttpPost]
+        [Authorize(Roles = "Registrado,Administrador")]
+        [ValidateAntiForgeryToken]
         public ActionResult Duplicar(int id)
         {
             var original = db.Mezclas.Include(m => m.Componentes).FirstOrDefault(m => m.Id == id);
@@ -240,35 +251,52 @@ namespace EcomixIA.Controllers
                 return new HttpStatusCodeResult(403, "Acceso denegado: Solo puede duplicar sus propias fórmulas guardadas.");
             }
 
-            var copia = new Mezcla
+            using (var tx = db.Database.BeginTransaction())
             {
-                Nombre = original.Nombre + " (Copia)",
-                ResistenciaMPa = original.ResistenciaMPa,
-                EdadDias = original.EdadDias,
-                RelacionAguaCemento = original.RelacionAguaCemento,
-                AsentamientoCm = original.AsentamientoCm,
-                Notas = original.Notas,
-                OwnerUserId = CurrentUserId
-            };
-
-            db.Mezclas.Add(copia);
-            db.SaveChanges();
-
-            if (original.Componentes != null && original.Componentes.Any())
-            {
-                foreach (var comp in original.Componentes)
+                try
                 {
-                    db.Componentes.Add(new MezclaComponente
+                    var copia = new Mezcla
                     {
-                        MezclaId = copia.Id,
-                        MaterialId = comp.MaterialId,
-                        Cantidad = comp.Cantidad
-                    });
+                        Nombre = original.Nombre + " (Copia)",
+                        ResistenciaMPa = original.ResistenciaMPa,
+                        EdadDias = original.EdadDias,
+                        RelacionAguaCemento = original.RelacionAguaCemento,
+                        AsentamientoCm = original.AsentamientoCm,
+                        Notas = original.Notas,
+                        OwnerUserId = CurrentUserId
+                    };
+
+                    db.Mezclas.Add(copia);
+                    db.SaveChanges();
+
+                    if (original.Componentes != null && original.Componentes.Any())
+                    {
+                        foreach (var comp in original.Componentes)
+                        {
+                            db.Componentes.Add(new MezclaComponente
+                            {
+                                MezclaId = copia.Id,
+                                MaterialId = comp.MaterialId,
+                                Cantidad = comp.Cantidad,
+                                CostoPorKgGuardado = comp.CostoPorKgGuardado,
+                                Co2PorKgGuardado = comp.Co2PorKgGuardado,
+                                FechaSnapshotUtc = comp.FechaSnapshotUtc,
+                                OrigenSnapshot = comp.OrigenSnapshot
+                            });
+                        }
+                        db.SaveChanges();
+                    }
+
+                    tx.Commit();
+                    TempData["Mensaje"] = "Mezcla duplicada exitosamente.";
                 }
-                db.SaveChanges();
+                catch
+                {
+                    tx.Rollback();
+                    TempData["Error"] = "Ocurrió un error al duplicar la mezcla y sus componentes.";
+                }
             }
 
-            TempData["Mensaje"] = "Mezcla duplicada exitosamente.";
             return RedirectToAction("Index");
         }
 
@@ -296,7 +324,8 @@ namespace EcomixIA.Controllers
             ModelState.Remove("Mezcla");
             ModelState.Remove("Material");
 
-            if (!ModelState.IsValid || !db.Materiales.Any(m => m.Id == componente.MaterialId))
+            var material = db.Materiales.Find(componente.MaterialId);
+            if (!ModelState.IsValid || material == null)
             {
                 TempData["Error"] = "Revisa el material y la cantidad del componente.";
                 return RedirectToAction("Details", new { id = mezclaId });
@@ -304,14 +333,51 @@ namespace EcomixIA.Controllers
 
             if (db.Componentes.Any(c => c.MezclaId == mezclaId && c.MaterialId == componente.MaterialId))
             {
-                TempData["Error"] = "Ese material ya está en la mezcla. Elimínalo y vuelve a agregarlo para cambiar la cantidad.";
+                TempData["Error"] = "Ese material ya está en la mezcla. Elimínalo y vuelve a agregarlo para actualizar o cambiar la cantidad.";
                 return RedirectToAction("Details", new { id = mezclaId });
             }
 
+            // Regla D-09 / H02-B: Captura estricta en el servidor desde catálogo vigente
+            componente.CostoPorKgGuardado = material.CostoPorKg;
+            componente.Co2PorKgGuardado = material.Co2PorKg;
+            componente.FechaSnapshotUtc = System.DateTime.UtcNow;
+            componente.OrigenSnapshot = "CAPTURADO";
+
             db.Componentes.Add(componente);
             db.SaveChanges();
-            TempData["Mensaje"] = "Material agregado a la mezcla.";
+            TempData["Mensaje"] = "Material agregado a la mezcla con snapshot histórico verificado.";
             return RedirectToAction("Details", new { id = mezclaId });
+        }
+
+        // POST: Mezclas/ActualizarComponente
+        [HttpPost]
+        [Authorize(Roles = "Registrado,Administrador")]
+        [ValidateAntiForgeryToken]
+        public ActionResult ActualizarComponente(int id, decimal cantidad)
+        {
+            var componente = db.Componentes.Find(id);
+            if (componente == null)
+            {
+                return HttpNotFound();
+            }
+
+            var mezcla = db.Mezclas.Find(componente.MezclaId);
+            if (mezcla == null || string.IsNullOrEmpty(mezcla.OwnerUserId) || mezcla.OwnerUserId != CurrentUserId)
+            {
+                return new HttpStatusCodeResult(403, "Acceso denegado: Modificación de componentes bloqueada en mezclas ajenas o sin propietario (D-01 / D-08).");
+            }
+
+            if (cantidad <= 0 || cantidad > 5000)
+            {
+                TempData["Error"] = "La cantidad debe estar entre 0.01 y 5000 kg/m³.";
+                return RedirectToAction("Details", new { id = componente.MezclaId });
+            }
+
+            // Regla H02-B: La edición de cantidad preserva intactos los valores unitarios capturados
+            componente.Cantidad = cantidad;
+            db.SaveChanges();
+            TempData["Mensaje"] = "Cantidad del componente actualizada manteniendo sus snapshots históricos intactos.";
+            return RedirectToAction("Details", new { id = componente.MezclaId });
         }
 
         // POST: Mezclas/EliminarComponente
@@ -431,12 +497,13 @@ namespace EcomixIA.Controllers
                     .Select(e => e.ErrorMessage)
                     .ToList();
 
-                return Json(new
+                Response.StatusCode = 400;
+                return Content(JsonConvert.SerializeObject(new
                 {
                     success = false,
                     error = "Datos de dosificación inválidos.",
                     validationErrors = errors
-                });
+                }), "application/json");
             }
 
             var request = new ConcretePredictionRequestDto

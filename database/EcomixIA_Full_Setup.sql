@@ -177,6 +177,10 @@ BEGIN
         [MezclaId] INT NOT NULL,
         [MaterialId] INT NOT NULL,
         [Cantidad] DECIMAL(18, 2) NOT NULL,
+        [CostoPorKgGuardado] DECIMAL(18, 6) NULL,
+        [Co2PorKgGuardado] DECIMAL(18, 6) NULL,
+        [FechaSnapshotUtc] DATETIME2 NULL,
+        [OrigenSnapshot] NVARCHAR(24) NULL,
         CONSTRAINT [PK_dbo.MezclaComponentes] PRIMARY KEY CLUSTERED ([Id] ASC),
         CONSTRAINT [FK_dbo.MezclaComponentes_dbo.Materials_MaterialId] FOREIGN KEY ([MaterialId]) 
             REFERENCES [dbo].[Materials] ([Id]) ON DELETE CASCADE,
@@ -185,7 +189,18 @@ BEGIN
     );
     CREATE NONCLUSTERED INDEX [IX_MezclaId] ON [dbo].[MezclaComponentes]([MezclaId] ASC);
     CREATE NONCLUSTERED INDEX [IX_MaterialId] ON [dbo].[MezclaComponentes]([MaterialId] ASC);
-    PRINT 'Tabla [dbo].[MezclaComponentes] creada.';
+    PRINT 'Tabla [dbo].[MezclaComponentes] creada con soporte para snapshots (D-09).';
+END
+ELSE
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.MezclaComponentes') AND name = 'CostoPorKgGuardado')
+    BEGIN
+        ALTER TABLE [dbo].[MezclaComponentes] ADD [CostoPorKgGuardado] DECIMAL(18, 6) NULL;
+        ALTER TABLE [dbo].[MezclaComponentes] ADD [Co2PorKgGuardado] DECIMAL(18, 6) NULL;
+        ALTER TABLE [dbo].[MezclaComponentes] ADD [FechaSnapshotUtc] DATETIME2 NULL;
+        ALTER TABLE [dbo].[MezclaComponentes] ADD [OrigenSnapshot] NVARCHAR(24) NULL;
+        PRINT 'Columnas de snapshot (D-09) agregadas a [dbo].[MezclaComponentes].';
+    END
 END
 GO
 
@@ -465,6 +480,12 @@ BEGIN TRY
         VALUES (46, 11, 10, 5.01);
     SET IDENTITY_INSERT [dbo].[MezclaComponentes] OFF;
     PRINT 'Componentes de mezcla inicializados exitosamente.';
+
+    -- Clasificar componentes iniciales como LEGADO_SIN_VERIFICAR (D-09)
+    UPDATE [dbo].[MezclaComponentes]
+    SET [OrigenSnapshot] = 'LEGADO_SIN_VERIFICAR'
+    WHERE [OrigenSnapshot] IS NULL;
+    PRINT 'Componentes iniciales clasificados con OrigenSnapshot = LEGADO_SIN_VERIFICAR.';
 
 
     -- 7. Historial de Migraciones EF6 (__MigrationHistory)

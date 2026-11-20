@@ -4,12 +4,13 @@ using Newtonsoft.Json;
 namespace EcomixIA.Models.Dtos
 {
     /// <summary>
-    /// Contrato de respuesta exitosa (HTTP 200 OK) retornado por el servicio de inferencia.
+    /// Contrato de respuesta exitosa (HTTP 200 OK) retornado por el servicio de inferencia de EcoMix IA.
+    /// Basado estrictamente en los esquemas Pydantic v2 del repositorio ML (src/inference/schemas.py).
     /// </summary>
     public class PredictionResponseDto
     {
         [JsonProperty("status")]
-        public string Status { get; set; }
+        public string Status { get; set; } = "success";
 
         [JsonProperty("predictions")]
         public PredictionValuesDto Predictions { get; set; }
@@ -24,43 +25,54 @@ namespace EcomixIA.Models.Dtos
         public PredictionMetadataDto Metadata { get; set; }
     }
 
+    /// <summary>
+    /// Predicciones puntuales determinísticas de resistencia a compresión (MPa) para 7 y 28 días.
+    /// Utiliza tipos numéricos anulables (decimal?) para evitar mostrar 0.00 MPa ante respuestas parciales.
+    /// </summary>
     public class PredictionValuesDto
     {
         [JsonProperty("strength_7d_mpa")]
-        public decimal Strength7dMpa { get; set; }
+        public decimal? Strength7dMpa { get; set; }
 
         [JsonProperty("strength_28d_mpa")]
-        public decimal Strength28dMpa { get; set; }
+        public decimal? Strength28dMpa { get; set; }
     }
 
+    /// <summary>
+    /// Relaciones analíticas de dosificación.
+    /// WaterCementRatio es anulable (decimal?) ya que el contrato FastAPI devuelve null cuando cemento es 0.
+    /// </summary>
     public class MixRatiosDto
     {
         [JsonProperty("water_cement_ratio")]
-        public decimal WaterCementRatio { get; set; }
+        public decimal? WaterCementRatio { get; set; }
 
         [JsonProperty("water_binder_ratio")]
-        public decimal WaterBinderRatio { get; set; }
+        public decimal? WaterBinderRatio { get; set; }
 
         [JsonProperty("total_cementitious_content_kg_m3")]
-        public decimal TotalCementitiousContentKgM3 { get; set; }
+        public decimal? TotalCementitiousContentKgM3 { get; set; }
 
         [JsonProperty("scm_replacement_percentage")]
-        public decimal ScmReplacementPercentage { get; set; }
+        public decimal? ScmReplacementPercentage { get; set; }
 
         [JsonProperty("aggregates_total_kg_m3")]
-        public decimal AggregatesTotalKgM3 { get; set; }
+        public decimal? AggregatesTotalKgM3 { get; set; }
 
         [JsonProperty("total_mass_kg_m3")]
-        public decimal TotalMassKgM3 { get; set; }
+        public decimal? TotalMassKgM3 { get; set; }
     }
 
+    /// <summary>
+    /// Advertencia estructurada no bloqueante generada por el motor de dominio (OOD o tecnológicas).
+    /// </summary>
     public class DomainWarningDto
     {
         [JsonProperty("code")]
         public string Code { get; set; }
 
         [JsonProperty("severity")]
-        public string Severity { get; set; }
+        public string Severity { get; set; } = "warning";
 
         [JsonProperty("field")]
         public string Field { get; set; }
@@ -75,13 +87,16 @@ namespace EcomixIA.Models.Dtos
         public string ReferenceBoundary { get; set; }
     }
 
+    /// <summary>
+    /// Metadatos de procedencia y trazabilidad del modelo de Machine Learning.
+    /// </summary>
     public class PredictionMetadataDto
     {
         [JsonProperty("model_id")]
-        public string ModelId { get; set; }
+        public string ModelId { get; set; } = "wheat_cheese_4swj34tkjn_11";
 
         [JsonProperty("model_type")]
-        public string ModelType { get; set; }
+        public string ModelType { get; set; } = "VotingEnsemble";
 
         [JsonProperty("model_sha256")]
         public string ModelSha256 { get; set; }
