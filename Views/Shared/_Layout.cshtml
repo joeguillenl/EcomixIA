@@ -7,6 +7,7 @@
     string claseMezclas = (controlador == "Mezclas" && accion != "Simulador") ? "nav-link active" : "nav-link";
     string claseSimulador = (controlador == "Mezclas" && accion == "Simulador") ? "nav-link active nav-link-simulator" : "nav-link nav-link-simulator";
     string claseDashboard = controlador == "Dashboard" ? "nav-link active" : "nav-link";
+    string claseAdmin = controlador == "Admin" ? "nav-link dropdown-toggle active text-warning" : "nav-link dropdown-toggle text-warning";
 }
 <html lang="es">
 <head>
@@ -95,6 +96,19 @@
                                 </a>
                             </li>
                         }
+                        @if (Request.IsAuthenticated && User.IsInRole("Administrador"))
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="@claseAdmin" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-shield-lock me-1"></i>Administración
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="adminDropdown">
+                                    <li><a class="dropdown-item" href="@Url.Action("Dashboard", "Admin")"><i class="bi bi-speedometer2 me-2"></i>Dashboard Global</a></li>
+                                    <li><a class="dropdown-item" href="@Url.Action("Users", "Admin")"><i class="bi bi-people me-2"></i>Gestión de Usuarios</a></li>
+                                    <li><a class="dropdown-item" href="@Url.Action("Audit", "Admin")"><i class="bi bi-journal-text me-2"></i>Pistas de Auditoría</a></li>
+                                </ul>
+                            </li>
+                        }
                     </ul>
 
                     <!-- Menú de autenticación / Estado de sesión (Tarea 1) -->
@@ -106,7 +120,14 @@
                                     <i class="bi bi-person-circle fs-6 text-white" aria-hidden="true"></i>
                                     <span class="ecomix-user-email text-truncate">@User.Identity.Name</span>
                                 </span>
-                                <span class="ecomix-badge-registrado">Registrado</span>
+                                @if (User.IsInRole("Administrador"))
+                                {
+                                    <span class="badge bg-warning text-dark fw-bold"><i class="bi bi-shield-shaded me-1"></i>Admin</span>
+                                }
+                                else
+                                {
+                                    <span class="ecomix-badge-registrado">Registrado</span>
+                                }
                                 @using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { id = "logoutForm", @class = "d-inline m-0 p-0" }))
                                 {
                                     @Html.AntiForgeryToken()

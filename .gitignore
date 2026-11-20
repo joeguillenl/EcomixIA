@@ -367,6 +367,8 @@ Web.Secrets.config
 
 # Simulated Email Outbox
 App_Data/EmailOutbox/
+App_Data/EmailOutbox_Test/
+App_Data/
 
 # Scratch directory
 scratch/
@@ -379,3 +381,4 @@ scratch/
 # Exported presentation binaries
 *.pptx
 *.pdf
+docs/presentacion-canva/

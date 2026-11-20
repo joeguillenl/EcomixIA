@@ -7,6 +7,13 @@ using System.Threading.Tasks;
 
 namespace EcomixIA.Services
 {
+    /// <summary>
+    /// Adaptador SMTP estándar de .NET Framework (System.Net.Mail).
+    /// COMPATIBILIDAD CRÍTICA (H04-A):
+    /// SmtpClient en .NET Framework implementa STARTTLS explícito en puerto 587 (con EnableSsl = true).
+    /// El puerto 465 (Implicit SSL/SMTPS) no está soportado nativamente por SmtpClient en .NET 4.7.2.
+    /// Por ende, para relays transaccionales (Brevo, SendGrid, etc.) debe emplearse estrictamente el puerto 587 con STARTTLS.
+    /// </summary>
     public class SmtpTransactionalEmailSender : ITransactionalEmailSender
     {
         private readonly string _host;

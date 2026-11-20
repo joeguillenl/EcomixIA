@@ -292,7 +292,7 @@ La solución `EcomixIA.sln` fue compilada de forma limpia con **MSBuild 17.14.18
 - **Rama:** `feat/ecomix-fase-04-cierre-integracion`
 - **Commits registrados del hito H03:**
   - `b7ca061` — *feat(auth): implementacion de recuperacion de cuentas, reenvio, throttling y adaptador transaccional H03*
-  - `[PENDING_FINAL]` — *docs(auditoria): registrar informe de auditoria y evidencias visuales del hito H03*
+  - `6596fbd` — *docs(auditoria): registrar informe de auditoria, pruebas y evidencias visuales H03*
 - **Políticas de confidencialidad:**
   - `Web.Secrets.config` permanece fuera del repositorio Git.
   - Ningún secreto ni contraseña se encuentra registrado en trazas o archivos JSON del Outbox.

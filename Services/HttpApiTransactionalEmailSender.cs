@@ -17,6 +17,11 @@ namespace EcomixIA.Services
         private readonly string _fromAddress;
         private readonly string _fromName;
 
+        public HttpApiTransactionalEmailSender(string apiUrl, string apiKey)
+            : this(null, apiUrl, apiKey, null, null)
+        {
+        }
+
         public HttpApiTransactionalEmailSender(
             HttpClient httpClient = null,
             string apiUrl = null,
@@ -29,6 +34,14 @@ namespace EcomixIA.Services
             _apiKey = apiKey ?? ConfigurationManager.AppSettings["EcoMix:HttpEmail:ApiKey"];
             _fromAddress = fromAddress ?? ConfigurationManager.AppSettings["EcoMix:Email:FromAddress"] ?? "notificaciones@ecomixia.com";
             _fromName = fromName ?? ConfigurationManager.AppSettings["EcoMix:Email:FromName"] ?? "EcoMix IA Notificaciones";
+
+            if (!string.IsNullOrWhiteSpace(_apiUrl))
+            {
+                if (!Uri.TryCreate(_apiUrl, UriKind.Absolute, out Uri parsedUri) || parsedUri.Scheme != Uri.UriSchemeHttps)
+                {
+                    throw new ArgumentException("Configuración insegura: La URL de la API de correo transaccional debe utilizar estrictamente el protocolo HTTPS.", nameof(apiUrl));
+                }
+            }
         }
 
         public async Task SendEmailAsync(string toEmail, string subject, string bodyHtml)
@@ -51,6 +64,12 @@ namespace EcomixIA.Services
             {
                 Trace.WriteLine("[HttpApiSender] Proveedor API HTTPS no aprovisionado. Claves o URL no configuradas.");
                 return EmailDeliveryResult.Failed("Proveedor API HTTPS no configurado en este entorno.", "HttpApi", transient: true);
+            }
+
+            if (!Uri.TryCreate(_apiUrl, UriKind.Absolute, out Uri parsedUri) || parsedUri.Scheme != Uri.UriSchemeHttps)
+            {
+                Trace.WriteLine("[HttpApiSender] Inseguro: La URL configurada no utiliza HTTPS.");
+                return EmailDeliveryResult.Failed("Configuración insegura: La API de correo debe utilizar estrictamente el protocolo HTTPS.", "HttpApi");
             }
 
             try
