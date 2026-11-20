@@ -23,7 +23,7 @@ BEGIN
 END
 GO
 
--- 2. Asegurar existencia del rol 'Administrador' en AspNetRoles y asignación del administrador inicial
+-- 2. Asegurar existencia del rol 'Administrador' en AspNetRoles
 IF NOT EXISTS (
     SELECT 1 
     FROM [dbo].[AspNetRoles] 
@@ -41,19 +41,11 @@ BEGIN
 END
 GO
 
--- Asignación exclusiva del rol inicial Administrador a joamedina@upt.pe si no existe ningún administrador activo
-DECLARE @adminRoleId NVARCHAR(128) = (SELECT TOP 1 [Id] FROM [dbo].[AspNetRoles] WHERE [Name] = 'Administrador');
-DECLARE @adminUserId NVARCHAR(128) = (SELECT TOP 1 [Id] FROM [dbo].[AspNetUsers] WHERE [Email] = 'joamedina@upt.pe');
-
-IF @adminRoleId IS NOT NULL AND @adminUserId IS NOT NULL
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM [dbo].[AspNetUserRoles] WHERE [RoleId] = @adminRoleId)
-    BEGIN
-        INSERT INTO [dbo].[AspNetUserRoles] ([UserId], [RoleId]) VALUES (@adminUserId, @adminRoleId);
-        PRINT 'Usuario inicial joamedina@upt.pe asignado al rol Administrador.';
-    END
-END
-GO
+-- NOTA DE SEGURIDAD D-10:
+-- La asignación de usuarios al rol 'Administrador' NO se realiza automáticamente
+-- en la migración de esquema. Debe utilizarse la rutina de provisión manual
+-- independiente (tools/Provision-Administrator.ps1) con autorización explícita.
+-- ==============================================================================
 
 -- 3. Crear tabla AuditEvents (D-07) con índices optimizados para retención de 30 días
 IF NOT EXISTS (

@@ -12,8 +12,15 @@ namespace EcomixIA.Services
     public class AuditService : IAuditService
     {
         private readonly Func<ApplicationDbContext> _contextFactory;
+        private static DateTime _lastOpportunisticPurgeUtc = DateTime.MinValue;
+        private static readonly System.Threading.SemaphoreSlim _purgeSemaphore = new System.Threading.SemaphoreSlim(1, 1);
 
         public AuditService() : this(() => new ApplicationDbContext())
+        {
+        }
+
+        public AuditService(string nameOrConnectionString)
+            : this(() => new ApplicationDbContext(nameOrConnectionString))
         {
         }
 
@@ -67,6 +74,9 @@ namespace EcomixIA.Services
             // Política de retención estricta de 30 días (D-07 / RF-49)
             var effectiveCutoff = cutoffUtc ?? DateTime.UtcNow.AddDays(-30);
 
+            // Activación oportunista de depuración física controlada (H05-A5 / D-07)
+            TriggerOpportunisticPurge(db, effectiveCutoff);
+
             return db.AuditEvents
                 .Where(e => e.TimestampUtc >= effectiveCutoff);
         }
@@ -77,25 +87,69 @@ namespace EcomixIA.Services
 
             var effectiveCutoff = cutoffUtc ?? DateTime.UtcNow.AddDays(-30);
             int totalDeleted = 0;
-            int deletedInBatch;
 
-            do
+            // Protección de concurrencia para evitar purgas simultáneas (H05-A5)
+            await _purgeSemaphore.WaitAsync();
+            try
             {
-                var pBatch = new SqlParameter("@batchSize", batchSize > 0 ? batchSize : 500);
-                var pCutoff = new SqlParameter("@cutoff", effectiveCutoff);
+                int deletedInBatch;
+                do
+                {
+                    var pBatch = new SqlParameter("@batchSize", batchSize > 0 ? batchSize : 500);
+                    var pCutoff = new SqlParameter("@cutoff", effectiveCutoff);
 
-                string sql = "DELETE TOP (@batchSize) FROM [dbo].[AuditEvents] WHERE [TimestampUtc] < @cutoff";
-                deletedInBatch = await db.Database.ExecuteSqlCommandAsync(sql, pBatch, pCutoff);
-                totalDeleted += deletedInBatch;
+                    string sql = "DELETE TOP (@batchSize) FROM [dbo].[AuditEvents] WHERE [TimestampUtc] < @cutoff";
+                    deletedInBatch = await db.Database.ExecuteSqlCommandAsync(sql, pBatch, pCutoff);
+                    totalDeleted += deletedInBatch;
 
-            } while (deletedInBatch > 0 && totalDeleted < 50000); // Límite de seguridad para evitar bloqueos prolongados
+                } while (deletedInBatch > 0 && totalDeleted < 50000); // Límite de seguridad para evitar bloqueos prolongados
 
-            if (totalDeleted > 0)
+                if (totalDeleted > 0)
+                {
+                    Trace.WriteLine($"[AuditService] Depuración física completada: {totalDeleted} registros eliminados anteriores a {effectiveCutoff:yyyy-MM-dd HH:mm:ss} UTC");
+                }
+
+                _lastOpportunisticPurgeUtc = DateTime.UtcNow;
+            }
+            finally
             {
-                Trace.WriteLine($"[AuditService] Depuración física completada: {totalDeleted} registros eliminados anteriores a {effectiveCutoff:yyyy-MM-dd HH:mm:ss} UTC");
+                _purgeSemaphore.Release();
             }
 
             return totalDeleted;
+        }
+
+        private void TriggerOpportunisticPurge(ApplicationDbContext db, DateTime cutoffUtc)
+        {
+            // Disparar purga oportunista no bloqueante si ha transcurrido al menos 1 hora desde la última ejecución
+            if (DateTime.UtcNow - _lastOpportunisticPurgeUtc >= TimeSpan.FromHours(1))
+            {
+                _lastOpportunisticPurgeUtc = DateTime.UtcNow;
+                Task.Run(async () =>
+                {
+                    if (await _purgeSemaphore.WaitAsync(0))
+                    {
+                        try
+                        {
+                            using (var localDb = _contextFactory())
+                            {
+                                var pBatch = new SqlParameter("@batchSize", 500);
+                                var pCutoff = new SqlParameter("@cutoff", cutoffUtc);
+                                string sql = "DELETE TOP (@batchSize) FROM [dbo].[AuditEvents] WHERE [TimestampUtc] < @cutoff";
+                                await localDb.Database.ExecuteSqlCommandAsync(sql, pBatch, pCutoff);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Trace.WriteLine($"[AuditService] Purga oportunista omitida por error: {ex.Message}");
+                        }
+                        finally
+                        {
+                            _purgeSemaphore.Release();
+                        }
+                    }
+                });
+            }
         }
 
         public async Task<AdminDashboardStatsDto> GetDashboardStatsAsync(ApplicationDbContext db, DateTime? cutoffUtc = null)
@@ -137,8 +191,19 @@ namespace EcomixIA.Services
         {
             if (string.IsNullOrWhiteSpace(input)) return null;
 
-            // Erradicación de contraseñas, tokens y claves
-            string sanitized = Regex.Replace(input, @"(Password|Contraseña|Token|Key|ApiKey|Secret)\s*[:=]\s*[^;&,\s]+", "$1=[PROTEGIDO]", RegexOptions.IgnoreCase);
+            // 1. Erradicación de contraseñas, tokens, firmas y claves de autenticación (H05-A4)
+            string sanitized = Regex.Replace(input, @"(Password|Contraseña|Token|Key|ApiKey|Secret|Bearer|Authorization|signature|sig)\s*[:=]\s*[^;&,\s]+", "$1=[PROTEGIDO]", RegexOptions.IgnoreCase);
+
+            // 2. Erradicación de cadenas de conexión completas o parciales
+            sanitized = Regex.Replace(sanitized, @"(Data Source|Initial Catalog|User ID|Password|Server|Database)\s*=\s*[^;]+", "$1=[PROTEGIDO]", RegexOptions.IgnoreCase);
+
+            // 3. Erradicación de rutas del sistema de archivos local (Windows y Unix)
+            sanitized = Regex.Replace(sanitized, @"[A-Za-z]:\\[\w\s\.-]+(?:\\[\w\s\.-]+)*", "[RUTA_PROTEGIDA]");
+            sanitized = Regex.Replace(sanitized, @"/(?:Users|home|var|etc|app|inetpub)/[\w\.-]+(?:/[\w\.-]+)*", "[RUTA_PROTEGIDA]");
+
+            // 4. Erradicación de trazas de pila internas (stack traces)
+            sanitized = Regex.Replace(sanitized, @"\s+at\s+[\w\.<>]+(?:\([^\)]*\))?", " [STACK_PROTEGIDO]");
+
             return sanitized;
         }
     }
