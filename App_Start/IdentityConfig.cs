@@ -16,13 +16,13 @@ namespace EcomixIA
         private readonly ITransactionalEmailSender _sender;
 
         public EmailService()
-            : this(new SimulatedEmailService())
+            : this(TransactionalEmailSenderFactory.CreateFromConfiguration())
         {
         }
 
         public EmailService(ITransactionalEmailSender sender)
         {
-            _sender = sender ?? new SimulatedEmailService();
+            _sender = sender ?? TransactionalEmailSenderFactory.CreateFromConfiguration();
         }
 
         public Task SendAsync(IdentityMessage message)

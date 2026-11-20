@@ -36,4 +36,42 @@ namespace EcomixIA.Models
         [Display(Name = "¿Recordar sesión?")]
         public bool RememberMe { get; set; }
     }
+
+    public class ForgotPasswordViewModel
+    {
+        [Required(ErrorMessage = "El correo electrónico es obligatorio.")]
+        [EmailAddress(ErrorMessage = "El formato del correo electrónico no es válido.")]
+        [Display(Name = "Correo electrónico")]
+        public string Email { get; set; }
+    }
+
+    public class ResetPasswordViewModel
+    {
+        [Required(ErrorMessage = "El correo electrónico es obligatorio.")]
+        [EmailAddress(ErrorMessage = "El formato del correo electrónico no es válido.")]
+        [Display(Name = "Correo electrónico")]
+        public string Email { get; set; }
+
+        [Required(ErrorMessage = "La nueva contraseña es obligatoria.")]
+        [StringLength(100, ErrorMessage = "La {0} debe tener al menos {2} caracteres.", MinimumLength = 8)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Nueva contraseña")]
+        public string Password { get; set; }
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirmar nueva contraseña")]
+        [Compare("Password", ErrorMessage = "La contraseña y la contraseña de confirmación no coinciden.")]
+        public string ConfirmPassword { get; set; }
+
+        [Required]
+        public string Code { get; set; }
+    }
+
+    public class ResendEmailConfirmationViewModel
+    {
+        [Required(ErrorMessage = "El correo electrónico es obligatorio.")]
+        [EmailAddress(ErrorMessage = "El formato del correo electrónico no es válido.")]
+        [Display(Name = "Correo electrónico")]
+        public string Email { get; set; }
+    }
 }

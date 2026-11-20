@@ -83,9 +83,10 @@ namespace EcomixIA.Services
                 return true;
             }
 
-            // 5. Tratamiento para la base secundaria de ensayo autorizada o bases que terminen en _Test
+            // 5. Tratamiento para la base secundaria de ensayo autorizada o bases que terminen en _Test o _Trial
             bool isAuthorizedTestDb = string.Equals(initialCatalog, AuthorizedTestDatabaseName, StringComparison.OrdinalIgnoreCase) ||
-                                      initialCatalog.EndsWith("_Test", StringComparison.OrdinalIgnoreCase);
+                                      initialCatalog.EndsWith("_Test", StringComparison.OrdinalIgnoreCase) ||
+                                      initialCatalog.EndsWith("_Trial", StringComparison.OrdinalIgnoreCase);
 
             if (!isAuthorizedTestDb)
             {

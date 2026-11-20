@@ -1,0 +1,42 @@
+@model EcomixIA.Models.ResendEmailConfirmationViewModel
+@{
+    ViewBag.Title = "Reenviar confirmación de correo";
+}
+
+<div class="row justify-content-center my-4">
+    <div class="col-12 col-md-8 col-lg-5">
+        <div class="card shadow-sm border-0" style="border-radius: 12px;">
+            <div class="card-header bg-primary text-white py-3">
+                <h1 class="h4 mb-0 fw-semibold"><i class="bi bi-send-check me-2" aria-hidden="true"></i>Reenviar activación</h1>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-secondary small mb-4">
+                    ¿No recibió el correo de activación o su enlace expiró? Ingrese la dirección con la que se registró para enviarle un nuevo enlace.
+                </p>
+
+                @using (Html.BeginForm("ResendEmailConfirmation", "Account", FormMethod.Post, new { role = "form", novalidate = "novalidate" }))
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+                    <div class="mb-4">
+                        @Html.LabelFor(m => m.Email, new { @class = "form-label fw-bold" })
+                        @Html.TextBoxFor(m => m.Email, new { @class = "form-control", placeholder = "usuario@virtual.upt.pe", autocomplete = "email", autofocus = "autofocus", required = "required" })
+                        @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-danger small" })
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-envelope-arrow-up me-1" aria-hidden="true"></i>Reenviar correo de activación
+                        </button>
+                    </div>
+                }
+            </div>
+            <div class="card-footer bg-light py-3 text-center small">
+                <a href="@Url.Action("Login", "Account")" class="text-secondary text-decoration-none">
+                    <i class="bi bi-arrow-left me-1"></i>Volver al inicio de sesión
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

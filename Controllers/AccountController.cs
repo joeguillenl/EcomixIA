@@ -21,9 +21,10 @@ namespace EcomixIA.Controllers
         private ApplicationDbContext _dbContext;
         private readonly IEmailDomainValidator _domainValidator;
         private readonly IRegistrationSafetyGate _safetyGate;
+        private readonly IRequestRateLimiter _rateLimiter;
 
         public AccountController()
-            : this(null, null, null, null, new EmailDomainValidator(), new RegistrationSafetyGate())
+            : this(null, null, null, null, new EmailDomainValidator(), new RegistrationSafetyGate(), new RequestRateLimiter())
         {
         }
 
@@ -33,7 +34,8 @@ namespace EcomixIA.Controllers
             ApplicationRoleManager roleManager,
             ApplicationDbContext dbContext,
             IEmailDomainValidator domainValidator,
-            IRegistrationSafetyGate safetyGate)
+            IRegistrationSafetyGate safetyGate,
+            IRequestRateLimiter rateLimiter = null)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -41,6 +43,7 @@ namespace EcomixIA.Controllers
             _dbContext = dbContext;
             _domainValidator = domainValidator ?? new EmailDomainValidator();
             _safetyGate = safetyGate ?? new RegistrationSafetyGate();
+            _rateLimiter = rateLimiter ?? new RequestRateLimiter();
         }
 
         public ApplicationUserManager UserManager
@@ -101,7 +104,8 @@ namespace EcomixIA.Controllers
             var user = await UserManager.FindByEmailAsync(normalizedEmail);
             if (user == null)
             {
-                ModelState.AddModelError(string.Empty, "Credenciales incorrectas o usuario no encontrado.");
+                // Mitigación de enumeración de usuarios (RF-07 / OWASP): Mensaje idéntico ante credenciales incorrectas
+                ModelState.AddModelError(string.Empty, "Credenciales incorrectas.");
                 return View(model);
             }
 
@@ -307,6 +311,214 @@ namespace EcomixIA.Controllers
 
             ViewBag.ErrorMessage = "El token de confirmación es inválido o ha expirado (validez máxima: 24 horas).";
             return View("ConfirmEmailError");
+        }
+
+        //
+        // GET: /Account/ForgotPassword
+        [AllowAnonymous]
+        public ActionResult ForgotPassword()
+        {
+            return View(new ForgotPasswordViewModel());
+        }
+
+        //
+        // POST: /Account/ForgotPassword
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            string clientIp = Request?.UserHostAddress ?? "127.0.0.1";
+            string rateLimitKey = $"ForgotPassword_{clientIp}_{model.Email?.Trim().ToLowerInvariant()}";
+
+            // Control de abuso / Rate limiting: máximo 3 solicitudes cada 5 minutos (H03-E / RN-25)
+            if (!_rateLimiter.IsAllowed(rateLimitKey, 3, TimeSpan.FromMinutes(5), out TimeSpan retryAfter))
+            {
+                ModelState.AddModelError(string.Empty, $"Ha realizado demasiadas solicitudes de recuperación. Por favor espere {Math.Ceiling(retryAfter.TotalMinutes)} minuto(s) antes de intentar nuevamente.");
+                return View(model);
+            }
+            _rateLimiter.RecordAttempt(rateLimitKey, TimeSpan.FromMinutes(5));
+
+            string normalizedEmail = _domainValidator.NormalizeEmail(model.Email);
+
+            // Si el dominio no está autorizado, respuesta genérica para no revelar información
+            if (!_domainValidator.IsDomainAllowed(normalizedEmail))
+            {
+                return View("ForgotPasswordConfirmation");
+            }
+
+            var user = await UserManager.FindByEmailAsync(normalizedEmail);
+            // Protección contra enumeración de cuentas (RF-08 / D-03 / RN-25):
+            // Si el usuario no existe o no ha confirmado su correo electrónico, respondemos con la misma confirmación genérica
+            if (user == null || !await UserManager.IsEmailConfirmedAsync(user.Id))
+            {
+                return View("ForgotPasswordConfirmation");
+            }
+
+            try
+            {
+                string code = await UserManager.GeneratePasswordResetTokenAsync(user.Id);
+                string callbackUrl = Url != null
+                    ? Url.Action("ResetPassword", "Account", new { code = code }, protocol: Request?.Url?.Scheme ?? "https")
+                    : $"/Account/ResetPassword?code={Uri.EscapeDataString(code)}";
+
+                await UserManager.SendEmailAsync(
+                    user.Id,
+                    "EcoMix IA — Restablecimiento de contraseña",
+                    $"<p>Estimado usuario de EcoMix IA,</p>" +
+                    $"<p>Hemos recibido una solicitud para restablecer la contraseña de su cuenta asociada a <strong>{HttpUtility.HtmlEncode(user.Email)}</strong>.</p>" +
+                    $"<p>Para establecer una nueva contraseña, haga clic en el siguiente enlace:</p>" +
+                    $"<p><a href=\"{callbackUrl}\">Restablecer mi contraseña</a></p>" +
+                    $"<p>Por motivos de seguridad, este enlace es temporal y de un solo uso.</p>" +
+                    $"<p>Si usted no solicitó este cambio, puede ignorar este mensaje de forma segura; su contraseña actual continuará siendo válida.</p>");
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"[AccountController] Error en envío de recuperación de contraseña: {ex.Message}");
+            }
+
+            return View("ForgotPasswordConfirmation");
+        }
+
+        //
+        // GET: /Account/ForgotPasswordConfirmation
+        [AllowAnonymous]
+        public ActionResult ForgotPasswordConfirmation()
+        {
+            return View();
+        }
+
+        //
+        // GET: /Account/ResetPassword
+        [AllowAnonymous]
+        public ActionResult ResetPassword(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                ViewBag.ErrorMessage = "El enlace de restablecimiento de contraseña está incompleto o el token no es válido.";
+                return View("ConfirmEmailError");
+            }
+
+            return View(new ResetPasswordViewModel { Code = code });
+        }
+
+        //
+        // POST: /Account/ResetPassword
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            string normalizedEmail = _domainValidator.NormalizeEmail(model.Email);
+            var user = await UserManager.FindByEmailAsync(normalizedEmail);
+            if (user == null)
+            {
+                // Para no revelar si el correo existe, mostrar confirmación genérica
+                return View("ResetPasswordConfirmation");
+            }
+
+            var result = await UserManager.ResetPasswordAsync(user.Id, model.Code, model.Password);
+            if (result.Succeeded)
+            {
+                // Invalidar todas las sesiones activas anteriores cambiando el SecurityStamp
+                await UserManager.UpdateSecurityStampAsync(user.Id);
+                return View("ResetPasswordConfirmation");
+            }
+
+            AddErrors(result);
+            return View(model);
+        }
+
+        //
+        // GET: /Account/ResetPasswordConfirmation
+        [AllowAnonymous]
+        public ActionResult ResetPasswordConfirmation()
+        {
+            return View();
+        }
+
+        //
+        // GET: /Account/ResendEmailConfirmation
+        [AllowAnonymous]
+        public ActionResult ResendEmailConfirmation()
+        {
+            return View(new ResendEmailConfirmationViewModel());
+        }
+
+        //
+        // POST: /Account/ResendEmailConfirmation
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> ResendEmailConfirmation(ResendEmailConfirmationViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            string clientIp = Request?.UserHostAddress ?? "127.0.0.1";
+            string rateLimitKey = $"ResendConfirmation_{clientIp}_{model.Email?.Trim().ToLowerInvariant()}";
+
+            // Control de frecuencia / Throttling (RF-37 / RN-25): máximo 2 solicitudes cada 3 minutos
+            if (!_rateLimiter.IsAllowed(rateLimitKey, 2, TimeSpan.FromMinutes(3), out TimeSpan retryAfter))
+            {
+                ModelState.AddModelError(string.Empty, $"Ha solicitado reenvíos con demasiada frecuencia. Por favor espere {Math.Ceiling(retryAfter.TotalMinutes)} minuto(s) antes de solicitar otro enlace.");
+                return View(model);
+            }
+            _rateLimiter.RecordAttempt(rateLimitKey, TimeSpan.FromMinutes(3));
+
+            string normalizedEmail = _domainValidator.NormalizeEmail(model.Email);
+
+            if (_domainValidator.IsDomainAllowed(normalizedEmail))
+            {
+                var user = await UserManager.FindByEmailAsync(normalizedEmail);
+                // Si el usuario existe y todavía NO ha confirmado su correo, enviamos un nuevo token
+                if (user != null && !user.EmailConfirmed)
+                {
+                    try
+                    {
+                        string code = await UserManager.GenerateEmailConfirmationTokenAsync(user.Id);
+                        string callbackUrl = Url != null
+                            ? Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, protocol: Request?.Url?.Scheme ?? "https")
+                            : $"/Account/ConfirmEmail?userId={Uri.EscapeDataString(user.Id)}&code={Uri.EscapeDataString(code)}";
+
+                        await UserManager.SendEmailAsync(
+                            user.Id,
+                            "EcoMix IA — Reenvío de confirmación de cuenta",
+                            $"<p>Estimado usuario de EcoMix IA,</p>" +
+                            $"<p>Se ha solicitado un nuevo enlace de activación para su cuenta asociada a <strong>{HttpUtility.HtmlEncode(user.Email)}</strong>.</p>" +
+                            $"<p>Para confirmar su correo electrónico y activar su cuenta, haga clic en el siguiente enlace:</p>" +
+                            $"<p><a href=\"{callbackUrl}\">Confirmar mi cuenta</a></p>" +
+                            $"<p>Este enlace es válido por 24 horas.</p>");
+                    }
+                    catch (Exception ex)
+                    {
+                        Trace.WriteLine($"[AccountController] Error en reenvío de correo de confirmación: {ex.Message}");
+                    }
+                }
+            }
+
+            // Respuesta pública genérica para prevenir enumeración de cuentas (RF-37)
+            return View("ResendEmailConfirmationSent");
+        }
+
+        //
+        // GET: /Account/ResendEmailConfirmationSent
+        [AllowAnonymous]
+        public ActionResult ResendEmailConfirmationSent()
+        {
+            return View();
         }
 
         private void AddErrors(IdentityResult result)

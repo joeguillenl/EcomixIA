@@ -166,6 +166,11 @@
     <Compile Include="Services\ITransactionalEmailSender.cs" />
     <Compile Include="Services\RegistrationSafetyGate.cs" />
     <Compile Include="Services\SimulatedEmailService.cs" />
+    <Compile Include="Services\IRequestRateLimiter.cs" />
+    <Compile Include="Services\RequestRateLimiter.cs" />
+    <Compile Include="Services\SmtpTransactionalEmailSender.cs" />
+    <Compile Include="Services\HttpApiTransactionalEmailSender.cs" />
+    <Compile Include="Services\TransactionalEmailSenderFactory.cs" />
     <Compile Include="Models\AccountViewModels.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -186,6 +191,12 @@
     <Content Include="Views\Account\Register.cshtml" />
     <Content Include="Views\Account\RegisterConfirmation.cshtml" />
     <Content Include="Views\Account\RegistrationDisabled.cshtml" />
+    <Content Include="Views\Account\ForgotPassword.cshtml" />
+    <Content Include="Views\Account\ForgotPasswordConfirmation.cshtml" />
+    <Content Include="Views\Account\ResetPassword.cshtml" />
+    <Content Include="Views\Account\ResetPasswordConfirmation.cshtml" />
+    <Content Include="Views\Account\ResendEmailConfirmation.cshtml" />
+    <Content Include="Views\Account\ResendEmailConfirmationSent.cshtml" />
     <Content Include="Views\_ViewStart.cshtml" />
     <Content Include="Views\Dashboard\Index.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />

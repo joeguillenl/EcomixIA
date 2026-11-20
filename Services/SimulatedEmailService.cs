@@ -81,5 +81,18 @@ namespace EcomixIA.Services
 
             return Task.FromResult(0);
         }
+
+        public async Task<EmailDeliveryResult> SendWithResultAsync(string toEmail, string subject, string bodyHtml)
+        {
+            try
+            {
+                await SendEmailAsync(toEmail, subject, bodyHtml);
+                return EmailDeliveryResult.Success(Guid.NewGuid().ToString("N"), "SimulatedEmailService");
+            }
+            catch (Exception ex)
+            {
+                return EmailDeliveryResult.Failed(ex.Message, "SimulatedEmailService");
+            }
+        }
     }
 }
