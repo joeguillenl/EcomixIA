@@ -1,0 +1,58 @@
+﻿{
+    "TimestampUtc":  "2026-11-20T20:23:17.1866056Z",
+    "Environment":  "LocalDB (EcomixIA_Trial)",
+    "TotalPassed":  72,
+    "TotalFailed":  0,
+    "DurationSeconds":  46.67,
+    "AllSuitesPassed":  true,
+    "Suites":  [
+                   {
+                       "Suite":  "Suite 01: Unit \u0026 Domain",
+                       "Script":  "01_Unit_Domain_Tests.ps1",
+                       "Passed":  23,
+                       "Failed":  0,
+                       "DurationSec":  1.37,
+                       "Success":  true
+                   },
+                   {
+                       "Suite":  "Suite 02: Integration EF6 \u0026 SQL",
+                       "Script":  "02_Integration_EF6_Sql_Tests.ps1",
+                       "Passed":  9,
+                       "Failed":  0,
+                       "DurationSec":  4.48,
+                       "Success":  true
+                   },
+                   {
+                       "Suite":  "Suite 03: HTTP \u0026 Authorization Pipeline",
+                       "Script":  "03_Http_Authorization_Tests.ps1",
+                       "Passed":  10,
+                       "Failed":  0,
+                       "DurationSec":  2.69,
+                       "Success":  true
+                   },
+                   {
+                       "Suite":  "Suite 04: FastAPI Contract Mocks",
+                       "Script":  "04_FastApi_Contract_Mock_Tests.ps1",
+                       "Passed":  10,
+                       "Failed":  0,
+                       "DurationSec":  2.77,
+                       "Success":  true
+                   },
+                   {
+                       "Suite":  "Suite 05: Security \u0026 Concurrency",
+                       "Script":  "05_Security_Concurrency_Tests.ps1",
+                       "Passed":  13,
+                       "Failed":  0,
+                       "DurationSec":  28.26,
+                       "Success":  true
+                   },
+                   {
+                       "Suite":  "Suite 06: Full Regression H01-H04",
+                       "Script":  "06_Full_Regression_H01_H04.ps1",
+                       "Passed":  7,
+                       "Failed":  0,
+                       "DurationSec":  5.2,
+                       "Success":  true
+                   }
+               ]
+}

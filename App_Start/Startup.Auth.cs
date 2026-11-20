@@ -25,9 +25,31 @@ namespace EcomixIA
                 LoginPath = new PathString("/Account/Login"),
                 Provider = new CookieAuthenticationProvider
                 {
-                    OnValidateIdentity = SecurityStampValidator.OnValidateIdentity<ApplicationUserManager, ApplicationUser>(
-                        validateInterval: TimeSpan.FromMinutes(15),
-                        regenerateIdentity: (manager, user) => user.GenerateUserIdentityAsync(manager))
+                    OnValidateIdentity = async context =>
+                    {
+                        // 1. Validador estándar de SecurityStamp (revalida cada 1 minuto)
+                        var standardValidator = SecurityStampValidator.OnValidateIdentity<ApplicationUserManager, ApplicationUser>(
+                            validateInterval: TimeSpan.FromMinutes(1),
+                            regenerateIdentity: (manager, user) => user.GenerateUserIdentityAsync(manager));
+
+                        await standardValidator(context);
+
+                        // 2. Verificación estricta de cuenta habilitada en middleware OWIN (H05-A3)
+                        if (context.Identity != null && context.Identity.IsAuthenticated)
+                        {
+                            var userManager = context.OwinContext.GetUserManager<ApplicationUserManager>();
+                            string userId = context.Identity.GetUserId();
+                            if (userManager != null && !string.IsNullOrEmpty(userId))
+                            {
+                                var user = await userManager.FindByIdAsync(userId);
+                                if (user == null || !user.IsEnabled)
+                                {
+                                    context.RejectIdentity();
+                                    context.OwinContext.Authentication.SignOut(DefaultAuthenticationTypes.ApplicationCookie);
+                                }
+                            }
+                        }
+                    }
                 },
                 CookieHttpOnly = true,
                 ExpireTimeSpan = TimeSpan.FromHours(8),

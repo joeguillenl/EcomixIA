@@ -115,8 +115,12 @@ namespace EcomixIA.Controllers
         //
         // GET: /Account/Login
         [AllowAnonymous]
-        public ActionResult Login(string returnUrl)
+        public ActionResult Login(string returnUrl, string disabled = null)
         {
+            if (disabled == "1")
+            {
+                ViewBag.ErrorMessage = "Su cuenta ha sido inhabilitada por un administrador del sistema. La sesión activa ha sido revocada.";
+            }
             ViewBag.ReturnUrl = returnUrl;
             return View();
         }
