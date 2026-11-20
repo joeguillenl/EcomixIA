@@ -27,9 +27,14 @@
                         @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger small" })
                     </div>
 
-                    <div class="mb-4 form-check">
-                        @Html.CheckBoxFor(m => m.RememberMe, new { @class = "form-check-input" })
-                        @Html.LabelFor(m => m.RememberMe, new { @class = "form-check-label text-secondary small" })
+                    <div class="mb-4 d-flex justify-content-between align-items-center">
+                        <div class="form-check mb-0">
+                            @Html.CheckBoxFor(m => m.RememberMe, new { @class = "form-check-input" })
+                            @Html.LabelFor(m => m.RememberMe, new { @class = "form-check-label text-secondary small" })
+                        </div>
+                        <a href="@Url.Action("ForgotPassword", "Account")" class="small text-primary text-decoration-none">
+                            ¿Olvidó su contraseña?
+                        </a>
                     </div>
 
                     <div class="d-grid gap-2">
@@ -40,6 +45,11 @@
             <div class="card-footer bg-light py-3 text-center small">
                 <span class="text-muted">¿Aún no tiene cuenta?</span>
                 <a href="@Url.Action("Register", "Account")" class="fw-semibold text-primary ms-1">Regístrese aquí</a>
+                <div class="mt-2">
+                    <a href="@Url.Action("ResendEmailConfirmation", "Account")" class="text-secondary text-decoration-none">
+                        <i class="bi bi-envelope me-1"></i>¿No recibió el correo de activación? Reenviar
+                    </a>
+                </div>
                 <div class="mt-2">
                     <a href="@Url.Action("Index", "Home")" class="text-secondary text-decoration-none">← Volver al inicio</a>
                 </div>

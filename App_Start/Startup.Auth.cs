@@ -26,7 +26,7 @@ namespace EcomixIA
                 Provider = new CookieAuthenticationProvider
                 {
                     OnValidateIdentity = SecurityStampValidator.OnValidateIdentity<ApplicationUserManager, ApplicationUser>(
-                        validateInterval: TimeSpan.FromMinutes(30),
+                        validateInterval: TimeSpan.FromMinutes(15),
                         regenerateIdentity: (manager, user) => user.GenerateUserIdentityAsync(manager))
                 },
                 CookieHttpOnly = true,

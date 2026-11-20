@@ -17,18 +17,50 @@ namespace EcomixIA.Controllers
     {
         private readonly EcomixContext db;
         private readonly IEcoMixMlClientService _mlClientService;
+        private readonly IAuditService _auditService;
 
-        public MezclasController() : this(new EcomixContext(), new EcoMixMlClientService())
+        public MezclasController() : this(new EcomixContext(), new EcoMixMlClientService(), new AuditService())
         {
         }
 
-        public MezclasController(EcomixContext context, IEcoMixMlClientService mlClientService)
+        public MezclasController(EcomixContext context, IEcoMixMlClientService mlClientService, IAuditService auditService = null)
         {
             this.db = context ?? throw new ArgumentNullException(nameof(context));
             this._mlClientService = mlClientService ?? throw new ArgumentNullException(nameof(mlClientService));
+            this._auditService = auditService ?? new AuditService();
         }
 
-        private string CurrentUserId => (User != null && User.Identity.IsAuthenticated) ? User.Identity.GetUserId() : null;
+        private string CurrentUserId
+        {
+            get
+            {
+                try
+                {
+                    if (System.Web.HttpContext.Current != null && System.Web.HttpContext.Current.User != null && System.Web.HttpContext.Current.User.Identity.IsAuthenticated)
+                    {
+                        return System.Web.HttpContext.Current.User.Identity.GetUserId();
+                    }
+                    return null;
+                }
+                catch { return null; }
+            }
+        }
+
+        private string ClientIp
+        {
+            get
+            {
+                try
+                {
+                    if (System.Web.HttpContext.Current != null && System.Web.HttpContext.Current.Request != null)
+                    {
+                        return System.Web.HttpContext.Current.Request.UserHostAddress ?? "127.0.0.1";
+                    }
+                    return "127.0.0.1";
+                }
+                catch { return "127.0.0.1"; }
+            }
+        }
 
         // GET: Mezclas
         public ActionResult Index()
@@ -465,6 +497,8 @@ namespace EcomixIA.Controllers
                 model.Ejecutado = true;
                 model.Resultado = response;
                 model.LatenciaMs = sw.ElapsedMilliseconds;
+
+                await _auditService.LogEventAsync("ML", "PredictStrength", true, CurrentUserId, User?.Identity?.Name, $"Invocación ML exitosa. Latencia: {sw.ElapsedMilliseconds} ms", ClientIp);
             }
             catch (EcoMixMlClientException ex)
             {
@@ -473,6 +507,8 @@ namespace EcomixIA.Controllers
                 model.LatenciaMs = sw.ElapsedMilliseconds;
                 model.ErrorMensaje = ex.Message;
                 model.ErrorDetalle = ex.ProblemDetails;
+
+                await _auditService.LogEventAsync("ML", "PredictStrength", false, CurrentUserId, User?.Identity?.Name, $"Invocación ML rechazada: {ex.Message}", ClientIp);
             }
             catch (Exception ex)
             {
@@ -480,6 +516,8 @@ namespace EcomixIA.Controllers
                 model.Ejecutado = false;
                 model.LatenciaMs = sw.ElapsedMilliseconds;
                 model.ErrorMensaje = "Ocurrió un error inesperado al consultar el servicio ML: " + ex.Message;
+
+                await _auditService.LogEventAsync("ML", "PredictStrength", false, CurrentUserId, User?.Identity?.Name, $"Error inesperado en servicio ML: {ex.Message}", ClientIp);
             }
 
             return View(model);
@@ -523,6 +561,8 @@ namespace EcomixIA.Controllers
                 var response = await _mlClientService.PredictStrengthAsync(request);
                 sw.Stop();
 
+                await _auditService.LogEventAsync("ML", "PredictStrengthAjax", true, CurrentUserId, User?.Identity?.Name, $"Invocación ML Ajax exitosa. Latencia: {sw.ElapsedMilliseconds} ms", ClientIp);
+
                 return Content(JsonConvert.SerializeObject(new
                 {
                     success = true,
@@ -533,6 +573,8 @@ namespace EcomixIA.Controllers
             catch (EcoMixMlClientException ex)
             {
                 sw.Stop();
+                await _auditService.LogEventAsync("ML", "PredictStrengthAjax", false, CurrentUserId, User?.Identity?.Name, $"Invocación ML Ajax rechazada: {ex.Message}", ClientIp);
+
                 Response.StatusCode = (int)ex.StatusCode;
                 return Content(JsonConvert.SerializeObject(new
                 {
@@ -545,6 +587,8 @@ namespace EcomixIA.Controllers
             catch (Exception ex)
             {
                 sw.Stop();
+                await _auditService.LogEventAsync("ML", "PredictStrengthAjax", false, CurrentUserId, User?.Identity?.Name, $"Error inesperado en servicio ML Ajax: {ex.Message}", ClientIp);
+
                 Response.StatusCode = 500;
                 return Content(JsonConvert.SerializeObject(new
                 {

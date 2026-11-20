@@ -1,0 +1,208 @@
+@model EcomixIA.Models.ViewModels.AdminDashboardViewModel
+@{
+    ViewBag.Title = "Dashboard Administrativo";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-4">
+    <!-- Encabezado del Dashboard Administrativo -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center pb-3 mb-4 border-bottom">
+        <div>
+            <h1 class="h2 text-dark mb-1 d-flex align-items-center gap-2">
+                <i class="bi bi-shield-lock-fill text-warning"></i> Dashboard Administrativo
+            </h1>
+            <p class="text-muted mb-0">Visión global agregada del sistema, métricas no identificables y eventos de seguridad.</p>
+        </div>
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <a href="@Url.Action("Users", "Admin")" class="btn btn-outline-primary">
+                <i class="bi bi-people me-1"></i> Gestión de Usuarios
+            </a>
+            <a href="@Url.Action("Audit", "Admin")" class="btn btn-outline-secondary">
+                <i class="bi bi-journal-text me-1"></i> Auditoría (30 días)
+            </a>
+        </div>
+    </div>
+
+    <!-- Alerta de Política de Retención de 30 Días (RF-49 / D-07) -->
+    <div class="alert alert-info border-info-subtle d-flex align-items-center gap-3 mb-4 shadow-sm" role="alert">
+        <i class="bi bi-shield-check fs-3 text-info flex-shrink-0"></i>
+        <div>
+            <h6 class="alert-heading mb-1 fw-bold">Política Estricta de Retención de 30 Días (RF-49 / D-07)</h6>
+            <p class="mb-0 small">
+                Las métricas agregadas de actividad operativa corresponden a eventos generados desde el 
+                <strong>@Model.Stats.RetentionCutoffUtc.ToString("dd/MM/yyyy HH:mm") UTC</strong>. 
+                Los registros anteriores a 30 días quedan automáticamente excluidos de las consultas activas y son objeto de depuración física idempotente.
+            </p>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Métricas Globales (KPIs) -->
+    <div class="row g-3 mb-4">
+        <!-- KPI 1: Total Usuarios -->
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted fw-semibold small text-uppercase">Total Usuarios</span>
+                        <div class="p-2 bg-primary bg-opacity-10 text-primary rounded-circle">
+                            <i class="bi bi-people-fill fs-5"></i>
+                        </div>
+                    </div>
+                    <h2 class="display-6 fw-bold text-dark mb-1">@Model.Stats.TotalUsuarios</h2>
+                    <div class="small text-muted">
+                        <span class="text-success"><i class="bi bi-check-circle-fill"></i> @Model.Stats.UsuariosHabilitados activos</span> · 
+                        <span class="text-secondary"><i class="bi bi-dash-circle-fill"></i> @Model.Stats.UsuariosDeshabilitados inactivos</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 2: Cuentas Habilitadas -->
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted fw-semibold small text-uppercase">Cuentas Habilitadas</span>
+                        <div class="p-2 bg-success bg-opacity-10 text-success rounded-circle">
+                            <i class="bi bi-person-check-fill fs-5"></i>
+                        </div>
+                    </div>
+                    <h2 class="display-6 fw-bold text-success mb-1">@Model.Stats.UsuariosHabilitados</h2>
+                    <div class="small text-muted">Cuentas con acceso autorizado al sistema</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 3: Invocaciones ML (30d) -->
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted fw-semibold small text-uppercase">Invocaciones ML (30d)</span>
+                        <div class="p-2 bg-info bg-opacity-10 text-info rounded-circle">
+                            <i class="bi bi-cpu-fill fs-5"></i>
+                        </div>
+                    </div>
+                    <h2 class="display-6 fw-bold text-info mb-1">@Model.Stats.InvocacionesML</h2>
+                    <div class="small text-muted">Consultas al modelo VotingEnsemble</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 4: Cuentas Inhabilitadas -->
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-start border-secondary border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted fw-semibold small text-uppercase">Cuentas Inhabilitadas</span>
+                        <div class="p-2 bg-secondary bg-opacity-10 text-secondary rounded-circle">
+                            <i class="bi bi-person-x-fill fs-5"></i>
+                        </div>
+                    </div>
+                    <h2 class="display-6 fw-bold text-secondary mb-1">@Model.Stats.UsuariosDeshabilitados</h2>
+                    <div class="small text-muted">Bloqueadas administrativamente (RF-22)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 5: Errores Operativos (30d) -->
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-start border-danger border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted fw-semibold small text-uppercase">Errores Operativos (30d)</span>
+                        <div class="p-2 bg-danger bg-opacity-10 text-danger rounded-circle">
+                            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                        </div>
+                    </div>
+                    <h2 class="display-6 fw-bold text-danger mb-1">@Model.Stats.ErroresOperativos</h2>
+                    <div class="small text-muted">Fallos de autenticación o llamadas ML</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 6: Actividad Administrativa (30d) -->
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted fw-semibold small text-uppercase">Acciones Admin (30d)</span>
+                        <div class="p-2 bg-warning bg-opacity-10 text-warning rounded-circle">
+                            <i class="bi bi-gear-fill fs-5"></i>
+                        </div>
+                    </div>
+                    <h2 class="display-6 fw-bold text-dark mb-1">@Model.Stats.ActividadAdministrativa</h2>
+                    <div class="small text-muted">Cambios de rol, habilitación y depuraciones</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de Última Actividad Administrativa -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-clock-history text-primary"></i> Última Actividad Administrativa y de Seguridad
+            </h5>
+            <a href="@Url.Action("Audit", "Admin")" class="btn btn-sm btn-outline-primary">
+                Ver todos los registros <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.RecentAdminEvents != null && Model.RecentAdminEvents.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col" style="width: 170px;">Fecha / Hora (UTC)</th>
+                                <th scope="col" style="width: 100px;">Categoría</th>
+                                <th scope="col">Acción</th>
+                                <th scope="col" style="width: 100px;">Resultado</th>
+                                <th scope="col">Actor</th>
+                                <th scope="col">Detalle</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var ev in Model.RecentAdminEvents)
+                            {
+                                <tr>
+                                    <td class="text-nowrap small text-muted">
+                                        <i class="bi bi-calendar3 me-1"></i>@ev.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss")
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">@ev.Category</span>
+                                    </td>
+                                    <td class="fw-semibold">@ev.Action</td>
+                                    <td>
+                                        @if (ev.Success)
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                <i class="bi bi-check-lg"></i> Éxito
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                                <i class="bi bi-x-lg"></i> Fallo
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="small">@(string.IsNullOrEmpty(ev.ActorEmail) ? "Sistema" : ev.ActorEmail)</td>
+                                    <td class="small text-muted text-break">@ev.Details</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                    No se registran eventos administrativos recientes en los últimos 30 días.
+                </div>
+            }
+        </div>
+    </div>
+</div>
