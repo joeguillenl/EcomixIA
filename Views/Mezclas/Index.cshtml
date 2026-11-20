@@ -57,12 +57,40 @@
                         <td class="py-3 text-center font-monospace">@item.ResistenciaMPa.ToString("0.0")</td>
                         <td class="py-3 text-center font-monospace">@item.EdadDias</td>
                         <td class="py-3 text-center font-monospace">@(item.RelacionAguaCemento.HasValue ? item.RelacionAguaCemento.Value.ToString("0.00") : "—")</td>
-                        <td class="py-3 text-center font-monospace">S/ @item.CostoPorM3.ToString("0.00")</td>
-                        <td class="py-3 text-center font-monospace">@item.Co2PorM3.ToString("0.000")</td>
+                        <td class="py-3 text-center font-monospace">
+                            @if (item.TieneSnapshotsCompletos && item.CostoHistoricoPorM3.HasValue)
+                            {
+                                <span class="text-success fw-bold">S/ @item.CostoHistoricoPorM3.Value.ToString("0.00")</span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-light border text-muted" title="Datos históricos pendientes de validar. Estimación actual referencial: S/ @item.CostoReferencialActualPorM3.ToString("0.00")">
+                                    Pendiente
+                                </span>
+                            }
+                        </td>
+                        <td class="py-3 text-center font-monospace">
+                            @if (item.TieneSnapshotsCompletos && item.Co2HistoricoPorM3.HasValue)
+                            {
+                                <span class="text-primary fw-bold">@item.Co2HistoricoPorM3.Value.ToString("0.000")</span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-light border text-muted" title="Datos históricos pendientes de validar. Estimación actual referencial: @item.Co2ReferencialActualPorM3.ToString("0.000") kg CO₂/m³">
+                                    Pendiente
+                                </span>
+                            }
+                        </td>
                         <td class="pe-4 py-3 text-end text-nowrap">
                             @Html.ActionLink("Ver", "Details", new { id = item.Id }, new { @class = "btn btn-sm btn-outline-secondary px-2 me-1" })
                             @Html.ActionLink("Editar", "Edit", new { id = item.Id }, new { @class = "btn btn-sm btn-outline-success px-2 me-1" })
-                            @Html.ActionLink("Duplicar", "Duplicar", new { id = item.Id }, new { @class = "btn btn-sm btn-outline-primary px-2 me-1" })
+                            @using (Html.BeginForm("Duplicar", "Mezclas", new { id = item.Id }, FormMethod.Post, new { @class = "d-inline m-0 p-0" }))
+                            {
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-primary px-2 me-1" title="Duplicar mezcla (POST)">
+                                    Duplicar
+                                </button>
+                            }
                             @Html.ActionLink("Eliminar", "Delete", new { id = item.Id }, new { @class = "btn btn-sm btn-outline-danger px-2" })
                         </td>
                     </tr>

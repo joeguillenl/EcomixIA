@@ -6,6 +6,7 @@
     string claseMateriales = controlador == "Materiales" ? "nav-link active" : "nav-link";
     string claseMezclas = (controlador == "Mezclas" && accion != "Simulador") ? "nav-link active" : "nav-link";
     string claseSimulador = (controlador == "Mezclas" && accion == "Simulador") ? "nav-link active nav-link-simulator" : "nav-link nav-link-simulator";
+    string claseDashboard = controlador == "Dashboard" ? "nav-link active" : "nav-link";
 }
 <html lang="es">
 <head>
@@ -86,6 +87,14 @@
                                 <i class="bi bi-cpu me-1" aria-hidden="true"></i>Simulador IA
                             </a>
                         </li>
+                        @if (Request.IsAuthenticated)
+                        {
+                            <li class="nav-item">
+                                <a href="@Url.Action("Index", "Dashboard")" class="@claseDashboard">
+                                    <i class="bi bi-speedometer2 me-1 d-lg-none" aria-hidden="true"></i>Dashboard
+                                </a>
+                            </li>
+                        }
                     </ul>
 
                     <!-- Menú de autenticación / Estado de sesión (Tarea 1) -->

@@ -1,0 +1,221 @@
+@model EcomixIA.Models.ViewModels.DashboardViewModel
+@{
+    ViewBag.Title = "Dashboard Personal";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+        <h1 class="h3 fw-bold mb-1 text-dark">
+            <i class="bi bi-speedometer2 text-success me-2" aria-hidden="true"></i>Dashboard Personal
+        </h1>
+        <p class="text-secondary small mb-0">
+            Resumen consolidado de indicadores de costo y sostenibilidad para <strong>@Model.UsuarioEmail</strong>
+        </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="@Url.Action("Index", "Mezclas")" class="btn btn-outline-secondary">
+            <i class="bi bi-stack me-1" aria-hidden="true"></i>Mis Mezclas
+        </a>
+        <a href="@Url.Action("Create", "Mezclas")" class="btn btn-success">
+            <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Nueva Mezcla
+        </a>
+        <a href="@Url.Action("Simulador", "Mezclas")" class="btn btn-primary">
+            <i class="bi bi-cpu me-1" aria-hidden="true"></i>Simulador IA
+        </a>
+    </div>
+</div>
+
+<!-- Tarjetas de KPIs Principales (RF-41 a RF-43) -->
+<div class="row g-3 mb-4">
+    <!-- KPI 1: Total de mezclas privadas -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100" style="border-radius: 12px; background: #ffffff;">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-uppercase small fw-bold text-secondary">Total Mezclas Propias</span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle p-2">
+                        <i class="bi bi-collection fs-5" aria-hidden="true"></i>
+                    </span>
+                </div>
+                <div class="display-6 fw-bold text-dark my-1">@Model.TotalMezclasPrivadas</div>
+                <div class="small text-secondary mt-2">
+                    <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>@Model.MezclasConCapturasCompletas</span> con snapshots verificados<br />
+                    @if (Model.MezclasPendientesValidacion > 0)
+                    {
+                        <span class="text-warning-emphasis"><i class="bi bi-exclamation-circle-fill me-1"></i>@Model.MezclasPendientesValidacion</span> <span class="text-muted">pendientes de validación</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI 2: Costo promedio por m³ -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100" style="border-radius: 12px; background: #ffffff;">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-uppercase small fw-bold text-secondary">Costo Promedio Verificado</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle p-2">
+                        <i class="bi bi-cash-stack fs-5" aria-hidden="true"></i>
+                    </span>
+                </div>
+                @if (Model.CostoPromedioPorM3.HasValue)
+                {
+                    <div class="display-6 fw-bold text-success my-1 font-monospace">
+                        S/ @Model.CostoPromedioPorM3.Value.ToString("0.00")
+                    </div>
+                    <div class="small text-secondary mt-2">
+                        <span class="badge text-bg-light border text-muted">S/ por m³</span>
+                        <span class="ms-1">Media aritmética de mezclas completas (D-09)</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="my-2">
+                        <span class="badge text-bg-light border text-muted fs-6 py-2 px-3 font-monospace">Sin datos</span>
+                    </div>
+                    <div class="small text-muted mt-2">
+                        No hay mezclas con snapshots históricos completos capturados.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI 3: Emisiones promedio por m³ -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100" style="border-radius: 12px; background: #ffffff;">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-uppercase small fw-bold text-secondary">Emisiones Promedio Verificadas</span>
+                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle p-2">
+                        <i class="bi bi-cloud-check fs-5" aria-hidden="true"></i>
+                    </span>
+                </div>
+                @if (Model.Co2PromedioPorM3.HasValue)
+                {
+                    <div class="display-6 fw-bold text-primary my-1 font-monospace">
+                        @Model.Co2PromedioPorM3.Value.ToString("0.0")
+                    </div>
+                    <div class="small text-secondary mt-2">
+                        <span class="badge text-bg-light border text-muted">kg CO₂/m³</span>
+                        <span class="ms-1">Media aritmética de huella ambiental</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="my-2">
+                        <span class="badge text-bg-light border text-muted fs-6 py-2 px-3 font-monospace">Sin datos</span>
+                    </div>
+                    <div class="small text-muted mt-2">
+                        No hay mezclas con snapshots ambientales completos.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Accesos Rápidos y Mezclas Recientes -->
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background: #fff;">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0 fw-semibold text-dark">
+            <i class="bi bi-clock-history text-secondary me-2" aria-hidden="true"></i>Mezclas Privadas Recientes
+        </h5>
+        <a href="@Url.Action("Index", "Mezclas")" class="btn btn-sm btn-outline-primary">
+            Ver todas (@Model.TotalMezclasPrivadas)
+        </a>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.MezclasRecientes != null && Model.MezclasRecientes.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase text-secondary">
+                        <tr>
+                            <th class="ps-4 py-3">Nombre de la Mezcla</th>
+                            <th class="py-3 text-center">Resistencia f'c</th>
+                            <th class="py-3 text-center">Costo Histórico</th>
+                            <th class="py-3 text-center">CO₂ Histórico</th>
+                            <th class="py-3 text-center">Estado Snapshot</th>
+                            <th class="pe-4 py-3 text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in Model.MezclasRecientes)
+                        {
+                            <tr>
+                                <td class="ps-4 py-3 fw-semibold text-dark">@m.Nombre</td>
+                                <td class="py-3 text-center font-monospace">@m.ResistenciaMPa.ToString("0.0") MPa</td>
+                                <td class="py-3 text-center font-monospace">
+                                    @if (m.TieneSnapshotsCompletos && m.CostoHistoricoPorM3.HasValue)
+                                    {
+                                        <span class="text-success fw-bold">S/ @m.CostoHistoricoPorM3.Value.ToString("0.00")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Pendiente de validar</span>
+                                    }
+                                </td>
+                                <td class="py-3 text-center font-monospace">
+                                    @if (m.TieneSnapshotsCompletos && m.Co2HistoricoPorM3.HasValue)
+                                    {
+                                        <span class="text-primary fw-bold">@m.Co2HistoricoPorM3.Value.ToString("0.0") kg</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Pendiente de validar</span>
+                                    }
+                                </td>
+                                <td class="py-3 text-center">
+                                    @if (m.TieneSnapshotsCompletos)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                            <i class="bi bi-shield-check me-1"></i>Verificado (D-09)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                                            <i class="bi bi-hourglass-split me-1"></i>Legado / Incompleto
+                                        </span>
+                                    }
+                                </td>
+                                <td class="pe-4 py-3 text-end text-nowrap">
+                                    <a href="@Url.Action("Details", "Mezclas", new { id = m.Id })" class="btn btn-sm btn-outline-secondary me-1">
+                                        Detalles
+                                    </a>
+                                    @using (Html.BeginForm("Duplicar", "Mezclas", new { id = m.Id }, FormMethod.Post, new { @class = "d-inline" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-primary" title="Duplicar mezcla de forma segura">
+                                            Duplicar
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5 px-3">
+                <i class="bi bi-inbox text-secondary display-4 d-block mb-3" aria-hidden="true"></i>
+                <h6 class="fw-bold text-dark">No tienes mezclas privadas registradas</h6>
+                <p class="text-secondary small mb-3">
+                    Comienza diseñando tu primera dosificación ecológica personalizada con el simulador o desde el catálogo.
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="@Url.Action("Create", "Mezclas")" class="btn btn-sm btn-success">
+                        <i class="bi bi-plus-circle me-1"></i>Crear Nueva Mezcla
+                    </a>
+                    <a href="@Url.Action("Simulador", "Mezclas")" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cpu me-1"></i>Abrir Simulador IA
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
