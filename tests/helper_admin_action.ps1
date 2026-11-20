@@ -1,7 +1,12 @@
 param(
     [Parameter(Mandatory=$true)][string]$Action,
-    [Parameter(Mandatory=$true)][string]$UserId
+    [Parameter(Mandatory=$true)][string]$UserId,
+    [Parameter(Mandatory=$false)][string]$TargetDatabase
 )
+
+if (![string]::IsNullOrWhiteSpace($TargetDatabase)) {
+    $env:TARGET_DATABASE = $TargetDatabase
+}
 
 . (Join-Path $PSScriptRoot "Test_Helpers.ps1")
 

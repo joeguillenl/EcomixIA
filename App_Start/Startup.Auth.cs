@@ -44,10 +44,22 @@ namespace EcomixIA
                                 var user = await userManager.FindByIdAsync(userId);
                                 if (user == null || !user.IsEnabled)
                                 {
+                                    context.OwinContext.Set("AccountDisabled", true);
                                     context.RejectIdentity();
                                     context.OwinContext.Authentication.SignOut(DefaultAuthenticationTypes.ApplicationCookie);
                                 }
                             }
+                        }
+                    },
+                    OnApplyRedirect = context =>
+                    {
+                        if (context.OwinContext.Get<bool>("AccountDisabled"))
+                        {
+                            context.Response.Redirect("/Account/Login?disabled=1");
+                        }
+                        else
+                        {
+                            context.Response.Redirect(context.RedirectUri);
                         }
                     }
                 },

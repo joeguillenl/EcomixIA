@@ -97,7 +97,7 @@ flowchart TD
     
     E -- "HTTP 200 OK" --> F["Deserializa PredictionResponseDto\n(Resistencia 7d/28d, Ratios, Warnings)"]
     F --> G["AuditService registra evento ML exitoso\n(Solo latencia, modelo y HTTP 200)"]
-    G --> H["Renderiza resultados en vista Razor / JSON Ajax\n(Gráfico interactivo Chart.js)"]
+    G --> H["Renderiza resultados en vista Razor / JSON Ajax\n(Gráfico interactivo con SVG nativo)"]
     
     E -- "HTTP 422 Unprocessable" --> I["FastAPI retorna ProblemDetailsDto\n(Validación de dominio físico/tecnológico)"]
     I --> J["EcoMixMlClientException capturada en MezclasController"]

@@ -20,7 +20,7 @@ Write-Host "  ECOMIX IA — MASTER AUTOMATED TEST SUITE (H05-R: VERIFICACIÓN PR
 Write-Host "================================================================================" -ForegroundColor Magenta
 
 # 1. Validación de seguridad de la base de datos de ensayo
-$allowedDatabases = @("EcomixIA_Trial", "EcomixIA_Test", "EcomixIA_IntegrationTest")
+$allowedDatabases = @("EcomixIA_Trial", "EcomixIA_Test")
 if ($TargetDatabase -notin $allowedDatabases) {
     Write-Error "[SEGURIDAD CRÍTICA] La base de datos objetivo '$TargetDatabase' no está en la lista blanca de bases de ensayo autorizadas ($($allowedDatabases -join ', ')). Abortando para prevenir sobreescritura destructiva."
     exit 1
@@ -30,6 +30,9 @@ if ($TargetDatabase -eq "EcomixIA") {
     Write-Error "[SEGURIDAD CRÍTICA] Se prohíbe explícitamente ejecutar restauraciones destructivas sobre la base principal 'EcomixIA'."
     exit 1
 }
+
+# Propagar explícitamente la base de datos de ensayo en el entorno del orquestador
+$env:TARGET_DATABASE = $TargetDatabase
 
 # 2. Verificación de existencia del respaldo base
 if (!(Test-Path $backupPath)) {
@@ -78,7 +81,8 @@ $testSuites = @(
     @{ Name = "Suite 03: HTTP & Authorization Pipeline"; Script = "03_Http_Authorization_Tests.ps1" },
     @{ Name = "Suite 04: FastAPI Contract Mocks"; Script = "04_FastApi_Contract_Mock_Tests.ps1" },
     @{ Name = "Suite 05: Security & Concurrency"; Script = "05_Security_Concurrency_Tests.ps1" },
-    @{ Name = "Suite 06: Full Regression H01-H04"; Script = "06_Full_Regression_H01_H04.ps1" }
+    @{ Name = "Suite 06: Full Regression H01-H04"; Script = "06_Full_Regression_H01_H04.ps1" },
+    @{ Name = "Suite 07: Real HTTP Pipeline (IIS Express)"; Script = "07_Real_Http_IisExpress_Tests.ps1" }
 )
 
 $suiteResults = @()
@@ -92,7 +96,9 @@ foreach ($suite in $testSuites) {
     $suiteWatch = [System.Diagnostics.Stopwatch]::StartNew()
     $scriptPath = Join-Path $PSScriptRoot $suite.Script
     
-    $output = & powershell -ExecutionPolicy Bypass -File $scriptPath 2>&1
+    # Propagar TargetDatabase al entorno del subproceso de prueba
+    $cmd = "`$env:TARGET_DATABASE = '$TargetDatabase'; & '$scriptPath'"
+    $output = & powershell -ExecutionPolicy Bypass -Command $cmd 2>&1
     $suiteWatch.Stop()
     
     $exitCode = $LASTEXITCODE
@@ -103,14 +109,17 @@ foreach ($suite in $testSuites) {
     $passMatches = [regex]::Match($outputText, "RESUMEN.*:\s*(\d+)\s*PASS\s*/\s*(\d+)\s*FAIL")
     $passed = 0
     $failed = 0
+    $hasValidSummary = $false
     if ($passMatches.Success) {
         $passed = [int]$passMatches.Groups[1].Value
         $failed = [int]$passMatches.Groups[2].Value
+        $hasValidSummary = $true
     } elseif ($exitCode -ne 0) {
         $failed = 1
     }
     
-    $suiteSuccess = ($exitCode -eq 0 -and $failed -eq 0)
+    # Validación estricta: código 0, resumen válido presente, al menos 1 prueba pasada y 0 fallidas
+    $suiteSuccess = ($exitCode -eq 0 -and $hasValidSummary -and $passed -gt 0 -and $failed -eq 0)
     if (!$suiteSuccess) { $allPass = $false }
     
     $suiteResults += [PSCustomObject]@{

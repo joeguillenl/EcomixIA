@@ -1,11 +1,21 @@
 ﻿# ==============================================================================
-# EcoMix IA — H05 Test Helpers (Modular Suite)
+# EcoMix IA — H05 Test Helpers (Modular Suite & TargetDatabase Propagation)
 # ==============================================================================
 
 $baseDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$connStringTrial = "Server=(LocalDb)\MSSQLLocalDB;Database=EcomixIA_Trial;Integrated Security=True"
 
-# Resolver dinámico de ensamblados
+# 1. Resolución y validación estricta de base de datos de ensayo autorizada
+$targetDb = if (![string]::IsNullOrWhiteSpace($env:TARGET_DATABASE)) { $env:TARGET_DATABASE.Trim() } else { "EcomixIA_Trial" }
+$allowedDatabases = @("EcomixIA_Trial", "EcomixIA_Test")
+
+if ($targetDb -notin $allowedDatabases) {
+    throw "[SEGURIDAD CRÍTICA] La base de datos '$targetDb' no está en la lista blanca de pruebas autorizadas ($($allowedDatabases -join ', ')). Abortando para proteger bases de datos productivas o principales."
+}
+
+$connStringTrial = "Server=(LocalDb)\MSSQLLocalDB;Database=$targetDb;Integrated Security=True"
+$targetDbName = $targetDb
+
+# 2. Resolver dinámico de ensamblados
 [AppDomain]::CurrentDomain.add_AssemblyResolve({
     param($s, $a)
     $shortName = $a.Name.Split(',')[0].Trim()
@@ -17,7 +27,7 @@ $connStringTrial = "Server=(LocalDb)\MSSQLLocalDB;Database=EcomixIA_Trial;Integr
     return $null
 })
 
-# Cargar dependencias esenciales
+# 3. Cargar dependencias esenciales
 Add-Type -Path (Join-Path $baseDir 'packages\Owin.1.0\lib\net40\Owin.dll') -ErrorAction SilentlyContinue
 Add-Type -Path (Join-Path $baseDir 'packages\Microsoft.Owin.4.2.2\lib\net45\Microsoft.Owin.dll') -ErrorAction SilentlyContinue
 Add-Type -Path (Join-Path $baseDir 'packages\Microsoft.Owin.Security.4.2.2\lib\net45\Microsoft.Owin.Security.dll') -ErrorAction SilentlyContinue
@@ -29,7 +39,7 @@ Add-Type -Path (Join-Path $baseDir 'packages\Microsoft.AspNet.Identity.EntityFra
 Add-Type -Path (Join-Path $baseDir 'packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll') -ErrorAction SilentlyContinue
 Add-Type -Path (Join-Path $baseDir 'bin\EcomixIA.dll') -ErrorAction SilentlyContinue
 
-# Inicializar contexto HTTP simulado si no existe
+# 4. Inicializar contexto HTTP simulado si no existe
 if ([System.Web.HttpContext]::Current -eq $null) {
     $req = New-Object System.Web.HttpRequest("", "http://localhost/", "")
     $res = New-Object System.Web.HttpResponse([System.IO.TextWriter]::Null)
@@ -37,7 +47,7 @@ if ([System.Web.HttpContext]::Current -eq $null) {
     [System.Web.HttpContext]::Current = $httpCtx
 }
 
-# Inicializador de controladores MVC
+# 5. Inicializador de controladores MVC
 function Init-Controller([System.Web.Mvc.Controller]$ctrl) {
     $wrapper = New-Object System.Web.HttpContextWrapper([System.Web.HttpContext]::Current)
     $routeData = New-Object System.Web.Routing.RouteData
@@ -45,7 +55,7 @@ function Init-Controller([System.Web.Mvc.Controller]$ctrl) {
     $ctrl.TempData = New-Object System.Web.Mvc.TempDataDictionary
 }
 
-# Funciones de aserción y conteo
+# 6. Funciones de aserción y conteo
 $global:passedTests = 0
 $global:failedTests = 0
 
@@ -61,7 +71,7 @@ function Assert-Test([string]$testName, [bool]$condition, [string]$detail) {
     }
 }
 
-# Utilidades SQL Server contra EcomixIA_Trial
+# 7. Utilidades SQL Server vinculadas estrictamente a TargetDatabase
 function Query-SqlScalar([string]$sql) {
     $conn = New-Object System.Data.SqlClient.SqlConnection($connStringTrial)
     $conn.Open()

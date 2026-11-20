@@ -30,7 +30,7 @@ Describe la interacción entre las capas de presentación, lógica de negocio, p
 ```mermaid
 flowchart TD
     subgraph Cliente ["Cliente / Navegador Web"]
-        Browser["Navegador Web\n(Bootstrap 5.3.3 / Chart.js)"]
+        Browser["Navegador Web\n(Bootstrap 5.3.3 / SVG Nativo)"]
     end
 
     subgraph AppServer ["Servidor de Aplicación (ASP.NET MVC 5 / .NET 4.7.2)"]
