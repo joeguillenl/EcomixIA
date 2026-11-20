@@ -431,12 +431,13 @@ namespace EcomixIA.Controllers
                     .Select(e => e.ErrorMessage)
                     .ToList();
 
-                return Json(new
+                Response.StatusCode = 400;
+                return Content(JsonConvert.SerializeObject(new
                 {
                     success = false,
                     error = "Datos de dosificación inválidos.",
                     validationErrors = errors
-                });
+                }), "application/json");
             }
 
             var request = new ConcretePredictionRequestDto

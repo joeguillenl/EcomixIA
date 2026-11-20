@@ -11,11 +11,13 @@ namespace EcomixIA.Services
 {
     /// <summary>
     /// Cliente HTTP para el microservicio de inferencia de concreto en Azure Container Apps.
-    /// Diseñado como Singleton / cliente estático reutilizable para evitar socket exhaustion en .NET Framework.
+    /// Diseñado como Singleton / cliente reutilizable para evitar socket exhaustion en .NET Framework.
+    /// Soporta inyección de HttpClient personalizado para pruebas unitarias sin costo cloud.
     /// </summary>
     public class EcoMixMlClientService : IEcoMixMlClientService
     {
         private static readonly HttpClient _httpClient;
+        private readonly HttpClient _customHttpClient;
         private readonly string _apiKey;
 
         static EcoMixMlClientService()
@@ -50,6 +52,15 @@ namespace EcomixIA.Services
             _apiKey = key;
         }
 
+        /// <summary>
+        /// Constructor para pruebas unitarias y dobles de prueba sin conectividad a Azure.
+        /// </summary>
+        public EcoMixMlClientService(HttpClient httpClient, string apiKey = null)
+        {
+            _customHttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _apiKey = apiKey ?? ConfigurationManager.AppSettings["EcoMix:ApiKey"] ?? "TEST_API_KEY_MOCK";
+        }
+
         public async Task<PredictionResponseDto> PredictStrengthAsync(ConcretePredictionRequestDto request, string requestId = null)
         {
             if (request == null)
@@ -67,8 +78,13 @@ namespace EcomixIA.Services
 
             var jsonPayload = JsonConvert.SerializeObject(request);
             var reqId = string.IsNullOrWhiteSpace(requestId) ? Guid.NewGuid().ToString("N") : requestId;
+            var client = _customHttpClient ?? _httpClient;
 
-            using (var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/v1/predict/concrete-strength"))
+            var targetUri = client.BaseAddress != null
+                ? new Uri(client.BaseAddress, "api/v1/predict/concrete-strength")
+                : new Uri("https://ca-ecomix-inference-api.salmontree-d9db53a4.chilecentral.azurecontainerapps.io/api/v1/predict/concrete-strength");
+
+            using (var httpRequest = new HttpRequestMessage(HttpMethod.Post, targetUri))
             {
                 httpRequest.Headers.Add("X-API-Key", _apiKey);
                 httpRequest.Headers.Add("X-Request-ID", reqId);
@@ -77,12 +93,12 @@ namespace EcomixIA.Services
                 HttpResponseMessage response;
                 try
                 {
-                    response = await _httpClient.SendAsync(httpRequest);
+                    response = await client.SendAsync(httpRequest);
                 }
                 catch (TaskCanceledException ex)
                 {
                     throw new EcoMixMlClientException(
-                        $"Tiempo de espera agotado al consultar el servicio ML en Azure ({_httpClient.Timeout.TotalSeconds} s). Si el servicio estaba en reposo (0 réplicas), el arranque en frío puede haber tardado más de lo habitual.",
+                        $"Tiempo de espera agotado al consultar el servicio ML en Azure ({client.Timeout.TotalSeconds} s). Si el servicio estaba en reposo (0 réplicas), el arranque en frío puede haber tardado más de lo habitual.",
                         408,
                         null,
                         ex
@@ -105,56 +121,64 @@ namespace EcomixIA.Services
                     if (!response.IsSuccessStatusCode)
                     {
                         var status = (int)response.StatusCode;
+                        ProblemDetailsDto problem = null;
+                        try
+                        {
+                            problem = JsonConvert.DeserializeObject<ProblemDetailsDto>(responseBody);
+                        }
+                        catch { }
 
+                        string detail;
                         if (status == 422)
                         {
-                            ProblemDetailsDto problem = null;
-                            try
-                            {
-                                problem = JsonConvert.DeserializeObject<ProblemDetailsDto>(responseBody);
-                            }
-                            catch { }
-
-                            var detail = problem != null && !string.IsNullOrWhiteSpace(problem.Detail)
+                            detail = problem != null && !string.IsNullOrWhiteSpace(problem.Detail)
                                 ? problem.Detail
-                                : "La dosificación no cumple con las restricciones físicas o normativas del modelo.";
-
-                            throw new EcoMixMlClientException(detail, 422, problem);
+                                : "La dosificación no cumple con las restricciones físicas o de dominio del concreto.";
                         }
-
-                        if (status == 401 || status == 403)
+                        else if (status == 400)
                         {
-                            throw new EcoMixMlClientException(
-                                "Error de autenticación con el servicio de inferencia de Azure (X-API-Key rechazada o inválida).",
-                                status
-                            );
+                            detail = problem != null && !string.IsNullOrWhiteSpace(problem.Detail)
+                                ? problem.Detail
+                                : "Solicitud de predicción malformada o parámetros inválidos (HTTP 400).";
                         }
-
-                        if (status == 429)
+                        else if (status == 401 || status == 403)
                         {
-                            throw new EcoMixMlClientException(
-                                "El servicio de inferencia ha alcanzado su límite de tasa de solicitudes (HTTP 429 Rate Limit). Intente nuevamente en unos instantes.",
-                                429
-                            );
+                            detail = problem != null && !string.IsNullOrWhiteSpace(problem.Detail)
+                                ? problem.Detail
+                                : "Error de autenticación con el servicio de inferencia de Azure (X-API-Key rechazada o inválida).";
                         }
-
-                        if (status == 503 || status == 500)
+                        else if (status == 429)
                         {
-                            throw new EcoMixMlClientException(
-                                $"El servicio ML en Azure no pudo procesar la solicitud (HTTP {status}).",
-                                status
-                            );
+                            detail = problem != null && !string.IsNullOrWhiteSpace(problem.Detail)
+                                ? problem.Detail
+                                : "El servicio de inferencia ha alcanzado su límite de tasa de solicitudes (HTTP 429 Rate Limit). Intente nuevamente en unos instantes.";
+                        }
+                        else if (status == 503)
+                        {
+                            detail = problem != null && !string.IsNullOrWhiteSpace(problem.Detail)
+                                ? problem.Detail
+                                : "El servicio de inferencia ML no se encuentra disponible temporalmente o el modelo no está preparado (HTTP 503).";
+                        }
+                        else if (status == 500)
+                        {
+                            detail = problem != null && !string.IsNullOrWhiteSpace(problem.Detail)
+                                ? problem.Detail
+                                : "El servicio ML en Azure experimentó un error interno al procesar la solicitud (HTTP 500).";
+                        }
+                        else
+                        {
+                            detail = problem != null && !string.IsNullOrWhiteSpace(problem.Detail)
+                                ? problem.Detail
+                                : $"Error en el servicio de inferencia (HTTP {status}).";
                         }
 
-                        throw new EcoMixMlClientException(
-                            $"Error inesperado del servicio de inferencia (HTTP {status}): {responseBody}",
-                            status
-                        );
+                        throw new EcoMixMlClientException(detail, status, problem);
                     }
 
+                    PredictionResponseDto result;
                     try
                     {
-                        return JsonConvert.DeserializeObject<PredictionResponseDto>(responseBody);
+                        result = JsonConvert.DeserializeObject<PredictionResponseDto>(responseBody);
                     }
                     catch (Exception ex)
                     {
@@ -165,6 +189,16 @@ namespace EcomixIA.Services
                             ex
                         );
                     }
+
+                    if (result == null || result.Predictions == null)
+                    {
+                        throw new EcoMixMlClientException(
+                            "La respuesta del servicio ML está incompleta o no contiene predicciones válidas.",
+                            502
+                        );
+                    }
+
+                    return result;
                 }
             }
         }
