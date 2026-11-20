@@ -86,6 +86,7 @@ La producción de concreto convencional representa aproximadamente el 8% de las 
 ### 2.4 Simulador con Inteligencia Artificial
 - **Entrada Tipada de Siete Insumos:** Inyección de proporciones en $\text{kg/m}^3$ (cemento, escoria de alto horno, ceniza volante, agua, superplastificante, agregado grueso y agregado fino).
 - **Predicción de Resistencia a Compresión:** Estimación en $\text{MPa}$ para curado estándar a **7 días** y **28 días** generada por el modelo supervisado `VotingEnsemble`.
+- **Acceso Abierto y Protección de Fórmulas:** El cálculo manual en el simulador está disponible abiertamente para fines didácticos sin requerir autenticación previa. Por el contrario, la precarga de fórmulas guardadas desde base de datos (`?mezclaId=...`) implementa una política estricta de **Safe Denial (D-01 / D-08)**: únicamente el usuario propietario puede precargar sus recetas; solicitudes anónimas o ajenas reciben una advertencia y un formulario en blanco sin revelar datos.
 - **Visualización Gráfica Vectorial (SVG Nativo):** Renderizado gráfico accesible de barras comparativas 7d / 28d desarrollado íntegramente en SVG nativo responsive integrado en Razor, eliminando dependencias externas de librerías como Chart.js (RF-18).
 - **Ratios Tecnológicos y Advertencias OOD:** Cálculo inmediato de la relación agua/cemento ($w/c$), agua/conglomerante ($w/b$) y porcentaje de sustitución puzolánica. Emisión de advertencias ante dosificaciones fuera de distribución (*Out-of-Distribution - OOD*) o violaciones de rangos tecnológicos.
 - **Resiliencia Operativa:** Captura desacoplada de errores 422 (*ProblemDetails*), timeouts de arranque en frío (HTTP 408) o caída del contenedor cloud (HTTP 503) mediante `EcoMixMlClientException`, presentando mensajes claros sin exponer trazas de error internas ni URLs de infraestructura.
@@ -96,7 +97,7 @@ La producción de concreto convencional representa aproximadamente el 8% de las 
 - **Protección contra Fuerza Bruta:** Bloqueo de cuenta temporal tras 5 intentos fallidos (`MaxFailedAccessAttemptsBeforeLockout = 5`) y limitador de tasa deslizante (*Sliding-Window Rate Limiter*) por IP/cuenta.
 - **Protección Anti-CSRF:** Validación mandatoria de `[ValidateAntiForgeryToken]` en todas las peticiones POST de mutación en controladores.
 - **Revocación Inmediata de Sesiones Inhabilitadas:** Filtro global `AuthorizeUserEnabledFilter` y middleware OWIN `OnValidateIdentity` que interceptan síncronamente cada petición autenticada: si la cuenta es inhabilitada en la base de datos (`IsEnabled = 0`), la sesión se revoca en el acto y se redirige a `/Account/Login?disabled=1`.
-- **Provisión Asistida del Primer Administrador (D-10 / RF-52 / RF-53):** Procedimiento manual independiente (`tools/Provision-Administrator.ps1`) con exclusión mutua transaccional (`sp_getapplock`) que impide auto-asignaciones automáticas en scripts DDL, bloquea reprovisiones si ya existe cualquier administrador y previene reejecuciones mediante historial persistente en `AuditEvents`.
+- **Provisión Asistida del Primer Administrador (D-10 / RF-52 / RF-53):** Procedimiento manual independiente ([`tools/Provision-Administrator.ps1`](tools/Provision-Administrator.ps1)) con exclusión mutua transaccional (`sp_getapplock`) que impide auto-asignaciones automáticas en scripts DDL, bloquea reprovisiones si ya existe cualquier administrador y previene reejecuciones mediante historial persistente en `AuditEvents`.
 
 ### 2.6 Dashboards y Pista de Auditoría
 - **Dashboard Personal (`/Dashboard`):** Panel privado para formuladores que resume el inventario de mezclas propias, costo promedio, $\text{CO}_2$ promedio y porcentaje de fórmulas con snapshot verificado. No persiste inferencias predictivas volátiles (Directiva D-04).
@@ -236,11 +237,15 @@ El sistema aplica una política estricta de separación de dominios y control de
 | **Catálogo de materiales (Creación, edición y eliminación)** | Denegado | Denegado (HTTP 403) | **Acceso total (CRUD)** |
 | **Gestión de mezclas privadas propias (CRUD)** | Denegado | **Acceso total a fórmulas propias** | **Acceso total a fórmulas propias** |
 | **Mezclas privadas de otros usuarios (Acceso transversal)** | Denegado | **Bloqueado (Safe Denial 404/403)** | **Bloqueado por diseño (D-08)** |
-| **Simulador de resistencia con Inteligencia Artificial** | Denegado (Redirect a Login) | **Acceso completo** | **Acceso completo** |
+| **Simulador IA: cálculo manual y predicción (`Simulador`, `SimularAjax`)** | **Acceso libre** | **Acceso completo** | **Acceso completo** |
+| **Simulador IA: precarga de fórmulas guardadas (`?mezclaId=...`)** | Bloqueado (Safe Denial / D-01) | **Acceso a fórmulas propias** | **Acceso a fórmulas propias (D-08)** |
 | **Dashboard personal (KPIs de mezclas propias)** | Denegado | **Acceso a KPIs propios** | **Acceso a KPIs propios** |
 | **Dashboard administrativo (Estadísticas globales)** | Denegado | Denegado (HTTP 403) | **Acceso a métricas agregadas** |
 | **Gestión de cuentas y roles (`/Admin/Users`)** | Denegado | Denegado (HTTP 403) | **Acceso total con exclusión mutua** |
 | **Pista de auditoría y depuración física (`/Admin/Audit`)** | Denegado | Denegado (HTTP 403) | **Consulta sanitizada y purga 30d** |
+
+> [!NOTE]
+> **Política de Acceso al Simulador:** En `MezclasController`, las acciones `Simulador` (GET/POST) y `SimularAjax` (POST) no exigen autorización por diseño, permitiendo el cálculo de dosificación interactivo a cualquier usuario o visitante con fines didácticos y de difusión técnica. La autorización se ejerce estrictamente sobre la **precarga de mezclas guardadas** (`?mezclaId=...`), aplicando Safe Denial ante usuarios no autenticados o ajenos a la propiedad de la fórmula. Cualquier modificación funcional a esta política (como restringir el simulador manual exclusivamente a usuarios autenticados) requerirá un hito de desarrollo y aprobación formal por separado.
 
 > [!IMPORTANT]
 > **Privacidad de Recetas (Directiva D-08):** El rol `Administrador` gestiona usuarios, roles y auditoría global, pero **no tiene acceso a ver, editar ni descargar las mezclas privadas formuladas por otros ingenieros**, respetando la confidencialidad de la propiedad intelectual de cada usuario.
@@ -279,23 +284,42 @@ cd "C:\Proyectos\EcoMixIA"
 *Verifique que la compilación termine con 0 Errores y 0 Advertencias.*
 
 #### Paso 3: Preparar la base de datos SQL Server
-Cree la base de datos `EcomixIA` en LocalDB si no existe:
-```powershell
-sqlcmd -S "(LocalDb)\MSSQLLocalDB" -Q "IF DB_ID('EcomixIA') IS NULL CREATE DATABASE [EcomixIA];"
-```
 
-#### Paso 4: Aplicar scripts DDL de migración controlados
-Aplique las migraciones en orden secuencial (nunca ejecute scripts de eliminación destructiva sobre bases con datos reales):
+Diferencie el procedimiento de base de datos según el estado de su entorno local:
+
+##### Escenario A: Instalación Limpia desde Cero (Base de Datos Nueva)
+1. **Creación de Esquema Base y Semillas Iniciales:** Ejecute los scripts DDL y DML oficiales en orden secuencial sobre LocalDB (o utilice [`database/EcomixIA_Full_Setup.sql`](database/EcomixIA_Full_Setup.sql) que los consolida de forma idempotente, como se describe en [`database/README.md`](database/README.md)):
+   ```powershell
+   # 1.1 Crear base de datos, 9 tablas de dominio/identidad e historial EF6 inicial
+   sqlcmd -S "(LocalDb)\MSSQLLocalDB" -i "database\01_Schema_EcomixIA.sql"
+
+   # 1.2 Poblar los 10 materiales de referencia del catálogo, roles y formulaciones semilla
+   sqlcmd -S "(LocalDb)\MSSQLLocalDB" -d EcomixIA -i "database\02_SeedData_EcomixIA.sql"
+   ```
+2. **Aplicar Migraciones Aditivas H02 y H04:** Actualice el esquema inicial a la versión completa del sistema:
+   ```powershell
+   # 2.1 Asegurar columna de propiedad OwnerUserId en Mezclas (si no existiera)
+   sqlcmd -S "(LocalDb)\MSSQLLocalDB" -d EcomixIA -i "Migrations\Scripts\apply_migration.sql"
+
+   # 2.2 Agregar snapshots históricos de costos y CO2 (H02 / RF-14 / D-09)
+   sqlcmd -S "(LocalDb)\MSSQLLocalDB" -d EcomixIA -i "Migrations\Scripts\H02_add_snapshots_to_mezclacomponentes.sql"
+
+   # 2.3 Agregar control IsEnabled, rol Administrador y tabla AuditEvents (H04 / RF-21 / D-07)
+   sqlcmd -S "(LocalDb)\MSSQLLocalDB" -d EcomixIA -i "Migrations\Scripts\H04_add_audit_and_user_enabled.sql"
+   ```
+
+##### Escenario B: Actualización o Migración de una Base de Datos Preexistente
+Si ya cuenta con una base de datos `EcomixIA` con registros reales, **nunca ejecute scripts destructivos ni de recreación**. Aplique únicamente las migraciones aditivas idempotentes en orden secuencial:
 ```powershell
-# 1. Snapshots históricos de precios y CO2 (H02)
+# 1. Snapshots históricos de precios y CO2 (H02 - clasifica registros previos como LEGADO_SIN_VERIFICAR)
 sqlcmd -S "(LocalDb)\MSSQLLocalDB" -d EcomixIA -i "Migrations\Scripts\H02_add_snapshots_to_mezclacomponentes.sql"
 
-# 2. Pista de auditoría, índices y columna IsEnabled (H04)
+# 2. Pista de auditoría de 30 días, índices y columna IsEnabled (H04)
 sqlcmd -S "(LocalDb)\MSSQLLocalDB" -d EcomixIA -i "Migrations\Scripts\H04_add_audit_and_user_enabled.sql"
 ```
 
-#### Paso 5: Configurar secretos locales (`Web.Secrets.config`)
-Copie el archivo de plantilla a su versión local (este archivo se encuentra protegido en `.gitignore`):
+#### Paso 4: Configurar secretos locales (`Web.Secrets.config`)
+Copie el archivo de plantilla [`Web.Secrets.example.config`](Web.Secrets.example.config) a su versión local (este archivo se encuentra protegido en `.gitignore`):
 ```powershell
 Copy-Item "Web.Secrets.example.config" "Web.Secrets.config"
 ```
@@ -306,20 +330,33 @@ Abra `Web.Secrets.config` y configure su clave de inferencia autorizada o utilic
 </appSettings>
 ```
 
-#### Paso 6: Correo transaccional simulado en desarrollo
+#### Paso 5: Correo transaccional simulado en desarrollo
 La aplicación incluye `SimulatedEmailService`. En desarrollo local no se requiere contratar servicios externos de correo: los enlaces de confirmación y restablecimiento se guardan automáticamente como archivos estructurados en la carpeta local `App_Data/EmailOutbox/` con costo $0 USD.
 
-#### Paso 7: Provisión manual del primer Administrador (D-10)
-Registre una cuenta inicial mediante la interfaz web de registro (ej. `joamedina@upt.pe`) y confirme su cuenta. Luego, ejecute la rutina controlada de bootstrap:
+#### Paso 6: Provisión manual del primer Administrador (D-10)
+Registre una cuenta inicial mediante la interfaz web de registro con un correo institucional permitido (ej. `administrador@upt.pe`) y confirme su cuenta a través del outbox de correo. Luego, ejecute la rutina controlada de bootstrap mediante [`tools/Provision-Administrator.ps1`](tools/Provision-Administrator.ps1):
 ```powershell
-powershell -ExecutionPolicy Bypass -File "tools\Provision-Administrator.ps1" -TargetEmail "joamedina@upt.pe"
+powershell -ExecutionPolicy Bypass -File "tools\Provision-Administrator.ps1" -TargetEmail "administrador@upt.pe"
 ```
 
-#### Paso 8: Iniciar la aplicación en IIS Express
-```powershell
-& "C:\Program Files\IIS Express\iisexpress.exe" /path:"C:\Proyectos\EcoMixIA" /port:44357
-```
-Abra el navegador en: **`https://localhost:44357/`**
+#### Paso 7: Iniciar la aplicación en IIS Express
+
+Seleccione el método de ejecución según su entorno de desarrollo:
+
+- **Opción A: Ejecución en Visual Studio (Recomendado para HTTPS):**  
+  Abra la solución `EcomixIA.sln` en Visual Studio 2022 y presione `Ctrl + F5` (o `F5` para depuración). Visual Studio inicializa IIS Express con el enlace de certificado SSL preconfigurado en el archivo de proyecto (`<IISExpressSSLPort>44357</IISExpressSSLPort>`):  
+  👉 Acceda en el navegador a: **`https://localhost:44357/`**
+
+- **Opción B: Ejecución por Línea de Comandos (PowerShell / HTTP probado):**  
+  Al invocar directamente `iisexpress.exe` mediante el parámetro `/port`, IIS Express expone un listener HTTP estándar (no cifrado). Para ejecutar la aplicación desde consola:
+  ```powershell
+  # Desde la raíz del repositorio C:\Proyectos\EcoMixIA:
+  & "C:\Program Files\IIS Express\iisexpress.exe" /path:"$PWD" /port:62778
+  ```
+  👉 Acceda en el navegador a: **`http://localhost:62778/`**
+
+> [!NOTE]
+> **Consistencia de Protocolos y Puertos:** El puerto seguro `44357` opera bajo protocolo **HTTPS** mediante el certificado de desarrollo gestionado por Visual Studio. La ejecución directa en consola con `/port` sirve sobre protocolo **HTTP** (ej. puerto `62778` o puerto de pruebas `58085`). Intentar acceder a `https://` sobre un puerto levantado sin enlace SSL arrojará un error de protocolo (`ERR_SSL_PROTOCOL_ERROR`).
 
 ---
 
@@ -383,18 +420,18 @@ El proyecto cuenta con una infraestructura de pruebas automatizadas modular y re
 
 | Suite | Script | Tipo de Validación | Escenarios Cubiertos | Resultado |
 |---|---|---|---|:---:|
-| **Suite 01** | `01_Unit_Domain_Tests.ps1` | Unitaria / Dominio | DTOs tipados, validador de dominios `@upt.pe`/`@gmail.com`, complejidad de contraseñas, rate limiter sliding-window, sanitización de auditoría y outbox de correo. | **23/23 PASS** |
-| **Suite 02** | `02_Integration_EF6_Sql_Tests.ps1` | Integración EF6 & SQL | Integridad de 10 tablas en SQL Server, snapshots `decimal(18,6)` en `MezclaComponentes`, retención estricta de 30 días y purga física por lotes. | **9/9 PASS** |
-| **Suite 03** | `03_Http_Authorization_Tests.ps1` | Pipeline Sintético MVC | Filtro de catálogo por clase, RBAC en catálogo y administración, filtro `AuthorizeUserEnabledFilter`, bloqueo de cuentas no confirmadas y tokens anti-CSRF. | **10/10 PASS** |
-| **Suite 04** | `04_FastApi_Contract_Mock_Tests.ps1` | Contrato ML / Mocks | Validación de contrato JSON, resiliencia ante 422/503/timeout sin trazas de excepción, y cero almacenamiento de recetas privadas en auditoría. | **10/10 PASS** |
-| **Suite 05** | `05_Security_Concurrency_Tests.ps1` | Seguridad y Concurrencia | Concurrencia de cambio de rol con 1 y 2 administradores activos, revalidación de `SecurityStamp`, provisión con `sp_getapplock` ('EcoMix_Admin_Bootstrap_Lock'), bloqueo de admin deshabilitado y script DDL. | **14/14 PASS** |
-| **Suite 06** | `06_Full_Regression_H01_H04.ps1` | Regresión Funcional | Inmutabilidad de snapshots ante alteraciones de catálogo, aislamiento de mezclas en dashboard personal, flujo de autenticación y estadísticas agregadas. | **7/7 PASS** |
-| **Suite 07** | `07_Real_Http_IisExpress_Tests.ps1` | HTTP Real en IIS Express | Servidor real en puerto 58085: GET anónimo 302, Login con cookie `.AspNet.ApplicationCookie`, POST sin CSRF rechazado (500), POST con CSRF aceptado (302), IDOR 403 y revocación inmediata hacia `Login?disabled=1`. | **7/7 PASS** |
-| **TOTAL** | `Run_All_Tests.ps1` | **7 Suites Modulares** | **Ejecutado sobre bases de ensayo aisladas (`EcomixIA_Trial` y `EcomixIA_Test`)** | **80/80 PASS (100%)** |
+| **Suite 01** | [`01_Unit_Domain_Tests.ps1`](tests/01_Unit_Domain_Tests.ps1) | Unitaria / Dominio | DTOs tipados, validador de dominios `@upt.pe`/`@gmail.com`, complejidad de contraseñas, rate limiter sliding-window, sanitización de auditoría y outbox de correo. | **23/23 PASS** |
+| **Suite 02** | [`02_Integration_EF6_Sql_Tests.ps1`](tests/02_Integration_EF6_Sql_Tests.ps1) | Integración EF6 & SQL | Integridad de 10 tablas en SQL Server, snapshots `decimal(18,6)` en `MezclaComponentes`, retención estricta de 30 días y purga física por lotes. | **9/9 PASS** |
+| **Suite 03** | [`03_Http_Authorization_Tests.ps1`](tests/03_Http_Authorization_Tests.ps1) | Pipeline Sintético MVC | Filtro de catálogo por clase, RBAC en catálogo y administración, filtro `AuthorizeUserEnabledFilter`, bloqueo de cuentas no confirmadas y tokens anti-CSRF. | **10/10 PASS** |
+| **Suite 04** | [`04_FastApi_Contract_Mock_Tests.ps1`](tests/04_FastApi_Contract_Mock_Tests.ps1) | Contrato ML / Mocks | Validación de contrato JSON, resiliencia ante 422/503/timeout sin trazas de excepción, y cero almacenamiento de recetas privadas en auditoría. | **10/10 PASS** |
+| **Suite 05** | [`05_Security_Concurrency_Tests.ps1`](tests/05_Security_Concurrency_Tests.ps1) | Seguridad y Concurrencia | Concurrencia de cambio de rol con 1 y 2 administradores activos, revalidación de `SecurityStamp`, provisión con `sp_getapplock` ('EcoMix_Admin_Bootstrap_Lock'), bloqueo de admin deshabilitado y script DDL. | **14/14 PASS** |
+| **Suite 06** | [`06_Full_Regression_H01_H04.ps1`](tests/06_Full_Regression_H01_H04.ps1) | Regresión Funcional | Inmutabilidad de snapshots ante alteraciones de catálogo, aislamiento de mezclas en dashboard personal, flujo de autenticación y estadísticas agregadas. | **7/7 PASS** |
+| **Suite 07** | [`07_Real_Http_IisExpress_Tests.ps1`](tests/07_Real_Http_IisExpress_Tests.ps1) | HTTP Real en IIS Express | Servidor real en puerto 58085: GET anónimo 302, Login con cookie `.AspNet.ApplicationCookie`, POST sin CSRF rechazado (500), POST con CSRF aceptado (302), IDOR 403 y revocación inmediata hacia `Login?disabled=1`. | **7/7 PASS** |
+| **TOTAL** | [`Run_All_Tests.ps1`](tests/Run_All_Tests.ps1) | **7 Suites Modulares** | **Ejecutado sobre bases de ensayo aisladas (`EcomixIA_Trial` y `EcomixIA_Test`)** | **80/80 PASS (100%)** |
 
 ### 8.2 Ejecución Segura de la Suite Completa
 
-El orquestador maestro restaura automáticamente la base de datos de ensayo antes y después de las pruebas a partir del respaldo base limpio [`database/backups/EcomixIA_pre_h05_20261120.bak`](database/backups/EcomixIA_pre_h05_20261120.bak):
+El orquestador maestro restaura automáticamente la base de datos de ensayo antes y después de las pruebas a partir del archivo de respaldo base limpio generado localmente (por convención, `database/backups/EcomixIA_pre_h05_20261120.bak`, archivo binario local de mantenimiento excluido del repositorio de código):
 
 ```powershell
 # Ejecución sobre base de ensayo principal EcomixIA_Trial
@@ -438,12 +475,16 @@ Los detalles de ingeniería, diseño arquitectónico, requerimientos y auditorí
 |---|---|---|
 | **SRS v1.3 (Revisión H05)** | [`docs/revisiones/SRS_v1.3_Revision_H05.md`](docs/revisiones/SRS_v1.3_Revision_H05.md) | Especificación de Requerimientos de Software actualizada con RF-01 a RF-55 y directivas D-01 a D-10. |
 | **SAD v1.2 (Revisión H05)** | [`docs/revisiones/SAD_v1.2_Revision_H05.md`](docs/revisiones/SAD_v1.2_Revision_H05.md) | Documento de Arquitectura de Software con diagramas C4, componentes, seguridad y patrones. |
+| **SRS v1.2 (Línea Base)** | [`docs/FD03_EPIS_SRS_EcoMixIA_v1.2.md`](docs/FD03_EPIS_SRS_EcoMixIA_v1.2.md) | Especificación original de requerimientos funcionales de fases 1 a 3. |
+| **SAD v1.1 (Línea Base)** | [`docs/FD03_EPIS_SAD_EcoMixIA_v1.1.md`](docs/FD03_EPIS_SAD_EcoMixIA_v1.1.md) | Arquitectura y modelo de datos relacional de referencia inicial. |
 | **Matriz de Trazabilidad H05-R** | [`docs/auditoria/Matriz_Trazabilidad_H05.md`](docs/auditoria/Matriz_Trazabilidad_H05.md) | Matriz completa de verificación de 95 ítems (88 implementados locales y 7 pendientes externos). |
 | **Informe de Auditoría Integral H05** | [`docs/auditoria/H05_Auditoria_Integral_Entrega.md`](docs/auditoria/H05_Auditoria_Integral_Entrega.md) | Informe de cierre técnico de la Fase 4 con evidencias visuales y remediaciones de seguridad. |
 | **Informe Pre-Merge H05-R** | [`docs/auditoria/H05_R_Verificacion_PreMerge.md`](docs/auditoria/H05_R_Verificacion_PreMerge.md) | Verificación formal de integración con `master`, exclusión mutua `sp_getapplock` y veredicto pre-merge. |
+| **Auditorías de Hitos H00–H04** | [`docs/auditoria/`](docs/auditoria/H00_Auditoria_Recuperacion_Sincronizacion.md) | Informes de avance [H00](docs/auditoria/H00_Auditoria_Recuperacion_Sincronizacion.md), [H01](docs/auditoria/H01_Cierre_Integracion_ML_Simulador.md), [H02](docs/auditoria/H02_Persistencia_Historica_Dashboard.md), [H03](docs/auditoria/H03_Autenticacion_Correo_Recuperacion.md) y [H04](docs/auditoria/H04_Administracion_Auditoria_RBAC.md). |
 | **Guía de Instalación en Limpio** | [`docs/entrega/Guia_Instalacion_Entorno_Limpio.md`](docs/entrega/Guia_Instalacion_Entorno_Limpio.md) | Manual paso a paso de puesta en marcha desde cero en servidores o estaciones limpias. |
 | **Guion de Demostración Final** | [`docs/entrega/Guion_Demostracion_Final.md`](docs/entrega/Guion_Demostracion_Final.md) | Guion para sustentación y evaluación de funcionalidades en 15 minutos. |
 | **Auditoría de Costos Azure** | [`docs/entrega/Auditoria_Costos_Azure.md`](docs/entrega/Auditoria_Costos_Azure.md) | Informe financiero de contención presupuestal D-06, estimaciones y procedimiento de contingencia. |
+| **Guía de Base de Datos** | [`database/README.md`](database/README.md) | Documentación técnica de scripts DDL/DML, idempotencia y configuración de cadenas de conexión. |
 | **Portal Interactivo Archify** | [`docs-interactive/index.html`](docs-interactive/index.html) | Portal web interactivo con diagramas visuales exploratorios con zoom y modo oscuro. |
 
 ---
