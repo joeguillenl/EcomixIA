@@ -12,6 +12,7 @@ namespace EcomixIA
         protected void Application_Start()
         {
             AreaRegistration.RegisterAllAreas();
+            GlobalFilters.Filters.Add(new Services.AuthorizeUserEnabledFilter());
             RouteConfig.RegisterRoutes(RouteTable.Routes);
         }
     }

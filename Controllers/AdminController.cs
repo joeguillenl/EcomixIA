@@ -21,6 +21,7 @@ namespace EcomixIA.Controllers
         private ApplicationRoleManager _roleManager;
         private ApplicationDbContext _dbContext;
         private readonly IAuditService _auditService;
+        private static readonly System.Threading.SemaphoreSlim _adminConcurrencyLock = new System.Threading.SemaphoreSlim(1, 1);
 
         public AdminController()
             : this(null, null, null, new AuditService())
@@ -206,56 +207,75 @@ namespace EcomixIA.Controllers
                 return new HttpStatusCodeResult(400, "Identificador de usuario no proporcionado.");
             }
 
-            var user = await UserManager.FindByIdAsync(userId);
-            if (user == null)
+            await _adminConcurrencyLock.WaitAsync();
+            try
             {
-                return HttpNotFound();
-            }
-
-            bool willDisable = user.IsEnabled;
-
-            // PROTECCIÓN CRÍTICA (H04-B / D-10): No deshabilitar al último administrador activo
-            if (willDisable && await UserManager.IsInRoleAsync(user.Id, "Administrador"))
-            {
-                int activeAdminCount = await CountActiveAdministratorsAsync();
-                if (activeAdminCount <= 1)
+                using (var tx = DbContext.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
                 {
+                    var user = await UserManager.FindByIdAsync(userId);
+                    if (user == null)
+                    {
+                        return HttpNotFound();
+                    }
+
+                    bool willDisable = user.IsEnabled;
+
+                    // PROTECCIÓN CRÍTICA CONCURRENTE (H05-A2 / D-10): No deshabilitar al último administrador activo
+                    if (willDisable && await UserManager.IsInRoleAsync(user.Id, "Administrador"))
+                    {
+                        int activeAdminCount = await CountActiveAdministratorsLockedAsync();
+                        if (activeAdminCount <= 1)
+                        {
+                            await _auditService.LogEventAsync(
+                                "Admin",
+                                "BlockDisableLastAdmin",
+                                false,
+                                CurrentUserId,
+                                CurrentUserEmail,
+                                $"Intento concurrente bloqueado de deshabilitar al último Administrador activo ({user.Email}).",
+                                ClientIp);
+
+                            TempData["MensajeError"] = "Operación bloqueada por seguridad: No es posible deshabilitar al último Administrador activo del sistema.";
+                            return RedirectToAction("Users");
+                        }
+                    }
+
+                    user.IsEnabled = !user.IsEnabled;
+                    var updateResult = await UserManager.UpdateAsync(user);
+
+                    if (!updateResult.Succeeded)
+                    {
+                        tx.Rollback();
+                        TempData["MensajeError"] = "Error al actualizar el estado de la cuenta: " + string.Join(", ", updateResult.Errors);
+                        return RedirectToAction("Users");
+                    }
+
+                    // Invalidar sesiones activas del usuario modificado mediante cambio de SecurityStamp
+                    var stampResult = await UserManager.UpdateSecurityStampAsync(user.Id);
+                    if (!stampResult.Succeeded)
+                    {
+                        tx.Rollback();
+                        TempData["MensajeError"] = "Error al actualizar las credenciales de seguridad de la cuenta.";
+                        return RedirectToAction("Users");
+                    }
+
+                    tx.Commit();
+
                     await _auditService.LogEventAsync(
                         "Admin",
-                        "BlockDisableLastAdmin",
-                        false,
+                        user.IsEnabled ? "UserEnabled" : "UserDisabled",
+                        true,
                         CurrentUserId,
                         CurrentUserEmail,
-                        $"Intento bloqueado de deshabilitar al último Administrador activo ({user.Email}).",
+                        $"Usuario {user.Email} {(user.IsEnabled ? "habilitado" : "deshabilitado")} por administrador.",
                         ClientIp);
 
-                    TempData["MensajeError"] = "Operación bloqueada por seguridad: No es posible deshabilitar al último Administrador activo del sistema.";
-                    return RedirectToAction("Users");
+                    TempData["MensajeExito"] = $"La cuenta {user.Email} ha sido {(user.IsEnabled ? "habilitada" : "deshabilitada")} exitosamente.";
                 }
             }
-
-            user.IsEnabled = !user.IsEnabled;
-            var updateResult = await UserManager.UpdateAsync(user);
-
-            if (updateResult.Succeeded)
+            finally
             {
-                // Invalidar sesiones activas del usuario modificado mediante cambio de SecurityStamp
-                await UserManager.UpdateSecurityStampAsync(user.Id);
-
-                await _auditService.LogEventAsync(
-                    "Admin",
-                    user.IsEnabled ? "UserEnabled" : "UserDisabled",
-                    true,
-                    CurrentUserId,
-                    CurrentUserEmail,
-                    $"Usuario {user.Email} {(user.IsEnabled ? "habilitado" : "deshabilitado")} por administrador.",
-                    ClientIp);
-
-                TempData["MensajeExito"] = $"La cuenta {user.Email} ha sido {(user.IsEnabled ? "habilitada" : "deshabilitada")} exitosamente.";
-            }
-            else
-            {
-                TempData["MensajeError"] = "Error al actualizar el estado de la cuenta.";
+                _adminConcurrencyLock.Release();
             }
 
             return RedirectToAction("Users");
@@ -278,67 +298,105 @@ namespace EcomixIA.Controllers
                 return new HttpStatusCodeResult(400, "Rol no reconocido.");
             }
 
-            var user = await UserManager.FindByIdAsync(userId);
-            if (user == null)
+            await _adminConcurrencyLock.WaitAsync();
+            try
             {
-                return HttpNotFound();
-            }
-
-            bool isCurrentlyAdmin = await UserManager.IsInRoleAsync(user.Id, "Administrador");
-
-            // PROTECCIÓN CRÍTICA: No revocar privilegios al último administrador activo
-            if (isCurrentlyAdmin && targetRole == "Registrado")
-            {
-                int activeAdminCount = await CountActiveAdministratorsAsync();
-                if (activeAdminCount <= 1)
+                using (var tx = DbContext.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
                 {
+                    var user = await UserManager.FindByIdAsync(userId);
+                    if (user == null)
+                    {
+                        return HttpNotFound();
+                    }
+
+                    bool isCurrentlyAdmin = await UserManager.IsInRoleAsync(user.Id, "Administrador");
+
+                    // PROTECCIÓN CRÍTICA CONCURRENTE (H05-A2 / D-10): No revocar privilegios al último administrador activo
+                    if (isCurrentlyAdmin && targetRole == "Registrado")
+                    {
+                        int activeAdminCount = await CountActiveAdministratorsLockedAsync();
+                        if (activeAdminCount <= 1)
+                        {
+                            await _auditService.LogEventAsync(
+                                "Admin",
+                                "BlockRevokeLastAdmin",
+                                false,
+                                CurrentUserId,
+                                CurrentUserEmail,
+                                $"Intento concurrente bloqueado de revocar rol al último Administrador activo ({user.Email}).",
+                                ClientIp);
+
+                            TempData["MensajeError"] = "Operación bloqueada por seguridad: No es posible revocar privilegios al último Administrador activo del sistema.";
+                            return RedirectToAction("Users");
+                        }
+                    }
+
+                    // Aplicar cambio de rol con verificación de Succeeded
+                    if (targetRole == "Administrador")
+                    {
+                        if (!isCurrentlyAdmin)
+                        {
+                            var addRes = await UserManager.AddToRoleAsync(user.Id, "Administrador");
+                            if (!addRes.Succeeded)
+                            {
+                                tx.Rollback();
+                                TempData["MensajeError"] = "Error al asignar rol Administrador: " + string.Join(", ", addRes.Errors);
+                                return RedirectToAction("Users");
+                            }
+                        }
+                    }
+                    else if (targetRole == "Registrado")
+                    {
+                        if (isCurrentlyAdmin)
+                        {
+                            var remRes = await UserManager.RemoveFromRoleAsync(user.Id, "Administrador");
+                            if (!remRes.Succeeded)
+                            {
+                                tx.Rollback();
+                                TempData["MensajeError"] = "Error al revocar rol Administrador: " + string.Join(", ", remRes.Errors);
+                                return RedirectToAction("Users");
+                            }
+                        }
+                        if (!await UserManager.IsInRoleAsync(user.Id, "Registrado"))
+                        {
+                            var addRegRes = await UserManager.AddToRoleAsync(user.Id, "Registrado");
+                            if (!addRegRes.Succeeded)
+                            {
+                                tx.Rollback();
+                                TempData["MensajeError"] = "Error al asignar rol Registrado: " + string.Join(", ", addRegRes.Errors);
+                                return RedirectToAction("Users");
+                            }
+                        }
+                    }
+
+                    // Invalidar sesiones activas del usuario para forzar revalidación de claims de rol
+                    var stampRes = await UserManager.UpdateSecurityStampAsync(user.Id);
+                    if (!stampRes.Succeeded)
+                    {
+                        tx.Rollback();
+                        TempData["MensajeError"] = "Error al actualizar credenciales de seguridad de rol.";
+                        return RedirectToAction("Users");
+                    }
+
+                    tx.Commit();
+
                     await _auditService.LogEventAsync(
                         "Admin",
-                        "BlockRevokeLastAdmin",
-                        false,
+                        "RoleChanged",
+                        true,
                         CurrentUserId,
                         CurrentUserEmail,
-                        $"Intento bloqueado de revocar rol al último Administrador activo ({user.Email}).",
+                        $"Rol de {user.Email} cambiado a '{targetRole}' por administrador.",
                         ClientIp);
 
-                    TempData["MensajeError"] = "Operación bloqueada por seguridad: No es posible revocar privilegios al último Administrador activo del sistema.";
-                    return RedirectToAction("Users");
+                    TempData["MensajeExito"] = $"El rol de {user.Email} ha sido modificado a '{targetRole}' exitosamente.";
                 }
             }
-
-            // Aplicar cambio de rol
-            if (targetRole == "Administrador")
+            finally
             {
-                if (!isCurrentlyAdmin)
-                {
-                    await UserManager.AddToRoleAsync(user.Id, "Administrador");
-                }
-            }
-            else if (targetRole == "Registrado")
-            {
-                if (isCurrentlyAdmin)
-                {
-                    await UserManager.RemoveFromRoleAsync(user.Id, "Administrador");
-                }
-                if (!await UserManager.IsInRoleAsync(user.Id, "Registrado"))
-                {
-                    await UserManager.AddToRoleAsync(user.Id, "Registrado");
-                }
+                _adminConcurrencyLock.Release();
             }
 
-            // Invalidar sesiones activas del usuario para forzar revalidación de claims de rol
-            await UserManager.UpdateSecurityStampAsync(user.Id);
-
-            await _auditService.LogEventAsync(
-                "Admin",
-                "RoleChanged",
-                true,
-                CurrentUserId,
-                CurrentUserEmail,
-                $"Rol de {user.Email} cambiado a '{targetRole}' por administrador.",
-                ClientIp);
-
-            TempData["MensajeExito"] = $"El rol de {user.Email} ha sido modificado a '{targetRole}' exitosamente.";
             return RedirectToAction("Users");
         }
 
@@ -444,20 +502,25 @@ namespace EcomixIA.Controllers
             return RedirectToAction("Audit");
         }
 
-        private async Task<int> CountActiveAdministratorsAsync()
+        private async Task<int> CountActiveAdministratorsLockedAsync()
         {
             var adminRole = await RoleManager.FindByNameAsync("Administrador");
             if (adminRole == null) return 0;
 
-            // Conteo directo y atómico sin depender de lazy loading en colecciones de Identity
+            // Bloqueo estricto UPDLOCK + HOLDLOCK contra carreras concurrentes (H05-A2 / D-10)
             string sql = @"
                 SELECT COUNT(*) 
-                FROM [dbo].[AspNetUsers] u
-                INNER JOIN [dbo].[AspNetUserRoles] ur ON u.Id = ur.UserId
+                FROM [dbo].[AspNetUsers] u WITH (UPDLOCK, HOLDLOCK)
+                INNER JOIN [dbo].[AspNetUserRoles] ur WITH (UPDLOCK, HOLDLOCK) ON u.Id = ur.UserId
                 WHERE ur.RoleId = @roleId AND u.IsEnabled = 1";
 
             var roleParam = new System.Data.SqlClient.SqlParameter("@roleId", adminRole.Id);
             return await DbContext.Database.SqlQuery<int>(sql, roleParam).FirstOrDefaultAsync();
+        }
+
+        private async Task<int> CountActiveAdministratorsAsync()
+        {
+            return await CountActiveAdministratorsLockedAsync();
         }
     }
 }

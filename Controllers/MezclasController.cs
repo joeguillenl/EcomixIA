@@ -498,26 +498,26 @@ namespace EcomixIA.Controllers
                 model.Resultado = response;
                 model.LatenciaMs = sw.ElapsedMilliseconds;
 
-                await _auditService.LogEventAsync("ML", "PredictStrength", true, CurrentUserId, User?.Identity?.Name, $"Invocación ML exitosa. Latencia: {sw.ElapsedMilliseconds} ms", ClientIp);
+                await _auditService.LogEventAsync("ML", "PredictStrength", true, CurrentUserId, User?.Identity?.Name, $"Invocación ML exitosa. Latencia: {sw.ElapsedMilliseconds} ms. Modelo: VotingEnsemble. Código: 200", ClientIp);
             }
             catch (EcoMixMlClientException ex)
             {
                 sw.Stop();
                 model.Ejecutado = false;
                 model.LatenciaMs = sw.ElapsedMilliseconds;
-                model.ErrorMensaje = ex.Message;
+                model.ErrorMensaje = "La solicitud de estimación fue rechazada por el servicio ML: " + (ex.ProblemDetails?.Detail ?? ex.Message);
                 model.ErrorDetalle = ex.ProblemDetails;
 
-                await _auditService.LogEventAsync("ML", "PredictStrength", false, CurrentUserId, User?.Identity?.Name, $"Invocación ML rechazada: {ex.Message}", ClientIp);
+                await _auditService.LogEventAsync("ML", "PredictStrength", false, CurrentUserId, User?.Identity?.Name, $"Invocación ML rechazada. HTTP {(int)ex.StatusCode}. Latencia: {sw.ElapsedMilliseconds} ms. Código: ML_CLIENT_REJECTED", ClientIp);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 sw.Stop();
                 model.Ejecutado = false;
                 model.LatenciaMs = sw.ElapsedMilliseconds;
-                model.ErrorMensaje = "Ocurrió un error inesperado al consultar el servicio ML: " + ex.Message;
+                model.ErrorMensaje = "Ocurrió un error inesperado al consultar el servicio ML. Por favor intente más tarde o contacte al administrador.";
 
-                await _auditService.LogEventAsync("ML", "PredictStrength", false, CurrentUserId, User?.Identity?.Name, $"Error inesperado en servicio ML: {ex.Message}", ClientIp);
+                await _auditService.LogEventAsync("ML", "PredictStrength", false, CurrentUserId, User?.Identity?.Name, $"Error inesperado en servicio ML. Latencia: {sw.ElapsedMilliseconds} ms. Código: ML_SERVICE_UNAVAILABLE", ClientIp);
             }
 
             return View(model);
@@ -561,7 +561,7 @@ namespace EcomixIA.Controllers
                 var response = await _mlClientService.PredictStrengthAsync(request);
                 sw.Stop();
 
-                await _auditService.LogEventAsync("ML", "PredictStrengthAjax", true, CurrentUserId, User?.Identity?.Name, $"Invocación ML Ajax exitosa. Latencia: {sw.ElapsedMilliseconds} ms", ClientIp);
+                await _auditService.LogEventAsync("ML", "PredictStrengthAjax", true, CurrentUserId, User?.Identity?.Name, $"Invocación ML Ajax exitosa. Latencia: {sw.ElapsedMilliseconds} ms. Modelo: VotingEnsemble. Código: 200", ClientIp);
 
                 return Content(JsonConvert.SerializeObject(new
                 {
@@ -573,28 +573,30 @@ namespace EcomixIA.Controllers
             catch (EcoMixMlClientException ex)
             {
                 sw.Stop();
-                await _auditService.LogEventAsync("ML", "PredictStrengthAjax", false, CurrentUserId, User?.Identity?.Name, $"Invocación ML Ajax rechazada: {ex.Message}", ClientIp);
+                await _auditService.LogEventAsync("ML", "PredictStrengthAjax", false, CurrentUserId, User?.Identity?.Name, $"Invocación ML Ajax rechazada. HTTP {(int)ex.StatusCode}. Latencia: {sw.ElapsedMilliseconds} ms. Código: ML_CLIENT_REJECTED", ClientIp);
 
                 Response.StatusCode = (int)ex.StatusCode;
                 return Content(JsonConvert.SerializeObject(new
                 {
                     success = false,
                     latencyMs = sw.ElapsedMilliseconds,
-                    error = ex.Message,
+                    error = "La solicitud de estimación fue rechazada por el servicio ML.",
+                    errorCode = "ML_CLIENT_REJECTED",
                     problemDetails = ex.ProblemDetails
                 }), "application/json");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 sw.Stop();
-                await _auditService.LogEventAsync("ML", "PredictStrengthAjax", false, CurrentUserId, User?.Identity?.Name, $"Error inesperado en servicio ML Ajax: {ex.Message}", ClientIp);
+                await _auditService.LogEventAsync("ML", "PredictStrengthAjax", false, CurrentUserId, User?.Identity?.Name, $"Error inesperado en servicio ML Ajax. Latencia: {sw.ElapsedMilliseconds} ms. Código: ML_SERVICE_UNAVAILABLE", ClientIp);
 
                 Response.StatusCode = 500;
                 return Content(JsonConvert.SerializeObject(new
                 {
                     success = false,
                     latencyMs = sw.ElapsedMilliseconds,
-                    error = "Error interno al comunicarse con el microservicio de inferencia: " + ex.Message
+                    error = "Error interno al comunicarse con el microservicio de inferencia. Por favor intente más tarde.",
+                    errorCode = "ML_SERVICE_UNAVAILABLE"
                 }), "application/json");
             }
         }

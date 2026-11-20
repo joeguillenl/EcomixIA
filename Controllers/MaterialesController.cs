@@ -6,6 +6,7 @@ using EcomixIA.Models;
 
 namespace EcomixIA.Controllers
 {
+    [Authorize]
     public class MaterialesController : Controller
     {
         private readonly EcomixContext db;
@@ -19,14 +20,12 @@ namespace EcomixIA.Controllers
             this.db = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        [AllowAnonymous]
         public ActionResult Index()
         {
             var materiales = db.Materiales.OrderBy(m => m.Tipo).ThenBy(m => m.Nombre).ToList();
             return View(materiales);
         }
 
-        [AllowAnonymous]
         public ActionResult Details(int? id)
         {
             var material = BuscarMaterial(id);
