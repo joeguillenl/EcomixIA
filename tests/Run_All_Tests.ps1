@@ -1,39 +1,81 @@
 ﻿# ==============================================================================
-# EcoMix IA — H05 Master Test Suite Orchestrator
+# EcoMix IA — H05 Master Test Suite Orchestrator (Hardened Pre-Merge Version)
 # ==============================================================================
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $false)]
+    [string]$TargetDatabase = "EcomixIA_Trial",
+
+    [Parameter(Mandatory = $false)]
+    [switch]$SkipRestore
+)
+
+$ErrorActionPreference = "Stop"
 
 $baseDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $backupPath = Join-Path $baseDir "database\backups\EcomixIA_pre_h05_20261120.bak"
 
 Write-Host "================================================================================" -ForegroundColor Magenta
-Write-Host "  ECOMIX IA — MASTER AUTOMATED TEST SUITE (H05: AUDITORÍA Y REMEDIACIÓN)" -ForegroundColor Magenta
+Write-Host "  ECOMIX IA — MASTER AUTOMATED TEST SUITE (H05-R: VERIFICACIÓN PRE-MERGE)" -ForegroundColor Magenta
 Write-Host "================================================================================" -ForegroundColor Magenta
+
+# 1. Validación de seguridad de la base de datos de ensayo
+$allowedDatabases = @("EcomixIA_Trial", "EcomixIA_Test", "EcomixIA_IntegrationTest")
+if ($TargetDatabase -notin $allowedDatabases) {
+    Write-Error "[SEGURIDAD CRÍTICA] La base de datos objetivo '$TargetDatabase' no está en la lista blanca de bases de ensayo autorizadas ($($allowedDatabases -join ', ')). Abortando para prevenir sobreescritura destructiva."
+    exit 1
+}
+
+if ($TargetDatabase -eq "EcomixIA") {
+    Write-Error "[SEGURIDAD CRÍTICA] Se prohíbe explícitamente ejecutar restauraciones destructivas sobre la base principal 'EcomixIA'."
+    exit 1
+}
+
+# 2. Verificación de existencia del respaldo base
+if (!(Test-Path $backupPath)) {
+    Write-Error "El archivo de respaldo '$backupPath' no existe. No se puede proceder con la restauración de la base de ensayo."
+    exit 1
+}
+
+# Resolución dinámica de rutas de archivos de datos (sin rutas absolutas fijas)
+$tempDir = [System.IO.Path]::GetTempPath()
+$mdfPath = Join-Path $tempDir "$($TargetDatabase).mdf"
+$ldfPath = Join-Path $tempDir "$($TargetDatabase)_log.ldf"
 
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 function Restore-TrialDatabase {
-    Write-Host "`n[PRE-FLIGHT] Restaurando base de datos de ensayo 'EcomixIA_Trial'..." -ForegroundColor Yellow
+    Write-Host "`n[FLIGHT] Restaurando base de datos de ensayo '$TargetDatabase'..." -ForegroundColor Yellow
     $sqlRestore = @"
-ALTER DATABASE [EcomixIA_Trial] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-RESTORE DATABASE [EcomixIA_Trial] 
+IF EXISTS (SELECT 1 FROM sys.databases WHERE name = N'$TargetDatabase')
+BEGIN
+    ALTER DATABASE [$TargetDatabase] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+END
+RESTORE DATABASE [$TargetDatabase] 
 FROM DISK = N'$backupPath' 
 WITH REPLACE, 
-MOVE 'EcomixIA' TO 'C:\Users\Admin\EcomixIA_Trial.mdf', 
-MOVE 'EcomixIA_log' TO 'C:\Users\Admin\EcomixIA_Trial_log.ldf';
-ALTER DATABASE [EcomixIA_Trial] SET MULTI_USER;
+MOVE 'EcomixIA' TO N'$mdfPath', 
+MOVE 'EcomixIA_log' TO N'$ldfPath';
+ALTER DATABASE [$TargetDatabase] SET MULTI_USER;
 "@
-    sqlcmd -S "(LocalDb)\MSSQLLocalDB" -Q $sqlRestore | Out-Null
-    Write-Host "[PRE-FLIGHT] 'EcomixIA_Trial' restaurada exitosamente a estado base limpio." -ForegroundColor Green
+    $restoreOutput = & sqlcmd -S "(LocalDb)\MSSQLLocalDB" -b -Q $sqlRestore 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Fallo crítico en sqlcmd durante la restauración de ${TargetDatabase}: $restoreOutput"
+        exit 1
+    }
+    Write-Host "[FLIGHT] '$TargetDatabase' restaurada exitosamente a estado base limpio." -ForegroundColor Green
 }
 
-# 1. Pre-flight restore
-Restore-TrialDatabase
+# 3. Pre-flight restore
+if (!$SkipRestore) {
+    Restore-TrialDatabase
+}
 
-# 2. Definición de suites modulares
+# 4. Definición de suites modulares
 $testSuites = @(
     @{ Name = "Suite 01: Unit & Domain"; Script = "01_Unit_Domain_Tests.ps1" },
     @{ Name = "Suite 02: Integration EF6 & SQL"; Script = "02_Integration_EF6_Sql_Tests.ps1" },
-    @{ Name = "Suite 03: HTTP & Authorization"; Script = "03_Http_Authorization_Tests.ps1" },
+    @{ Name = "Suite 03: HTTP & Authorization Pipeline"; Script = "03_Http_Authorization_Tests.ps1" },
     @{ Name = "Suite 04: FastAPI Contract Mocks"; Script = "04_FastApi_Contract_Mock_Tests.ps1" },
     @{ Name = "Suite 05: Security & Concurrency"; Script = "05_Security_Concurrency_Tests.ps1" },
     @{ Name = "Suite 06: Full Regression H01-H04"; Script = "06_Full_Regression_H01_H04.ps1" }
@@ -81,14 +123,16 @@ foreach ($suite in $testSuites) {
     }
 }
 
-# 3. Post-flight restore para dejar EcomixIA_Trial limpia
-Restore-TrialDatabase
+# 5. Post-flight restore para dejar base de ensayo limpia
+if (!$SkipRestore) {
+    Restore-TrialDatabase
+}
 
 $stopwatch.Stop()
 
-# 4. Generar reporte consolidado
+# 6. Generar reporte consolidado
 Write-Host "`n================================================================================" -ForegroundColor Magenta
-Write-Host "  RESUMEN EJECUTIVO CONSOLIDADO DE PRUEBAS H05" -ForegroundColor Magenta
+Write-Host "  RESUMEN EJECUTIVO CONSOLIDADO DE PRUEBAS H05-R" -ForegroundColor Magenta
 Write-Host "================================================================================" -ForegroundColor Magenta
 
 $totalPassed = 0
@@ -99,7 +143,7 @@ foreach ($sr in $suiteResults) {
     $totalFailed += $sr.Failed
     $statusColor = if ($sr.Success) { "Green" } else { "Red" }
     $statusText = if ($sr.Success) { "PASS" } else { "FAIL" }
-    Write-Host ("  [{0}] {1,-35} | {2,3} PASS | {3,2} FAIL | {4,5} s" -f $statusText, $sr.Suite, $sr.Passed, $sr.Failed, $sr.DurationSec) -ForegroundColor $statusColor
+    Write-Host ("  [{0}] {1,-38} | {2,3} PASS | {3,2} FAIL | {4,5} s" -f $statusText, $sr.Suite, $sr.Passed, $sr.Failed, $sr.DurationSec) -ForegroundColor $statusColor
 }
 
 Write-Host "--------------------------------------------------------------------------------" -ForegroundColor Gray
@@ -107,10 +151,10 @@ $overallStatusColor = if ($allPass) { "Green" } else { "Red" }
 Write-Host ("  TOTAL: {0} PASS / {1} FAIL | Tiempo Total: {2:N2} s" -f $totalPassed, $totalFailed, $stopwatch.Elapsed.TotalSeconds) -ForegroundColor $overallStatusColor
 Write-Host "================================================================================" -ForegroundColor Magenta
 
-# 5. Exportar JSON de evidencia
+# 7. Exportar JSON de evidencia
 $summaryJson = [PSCustomObject]@{
     TimestampUtc = [DateTime]::UtcNow.ToString("o")
-    Environment = "LocalDB (EcomixIA_Trial)"
+    Environment = "LocalDB ($TargetDatabase)"
     TotalPassed = $totalPassed
     TotalFailed = $totalFailed
     DurationSeconds = [Math]::Round($stopwatch.Elapsed.TotalSeconds, 2)

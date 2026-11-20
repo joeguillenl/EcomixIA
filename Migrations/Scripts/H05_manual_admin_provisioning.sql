@@ -1,13 +1,15 @@
 -- ==============================================================================
--- ECOMIX IA — PROVISIÓN MANUAL AUDITADA DE ADMINISTRADOR (DIRECTIVA D-10)
--- Este script es para uso EXCLUSIVO de administradores del sistema y DBA autorizados.
+-- ECOMIX IA — PROVISIÓN MANUAL AUDITADA DEL PRIMER ADMINISTRADOR (D-10 / RF-52 / RF-53)
+-- Este script es para uso EXCLUSIVO de inicialización (bootstrap) del sistema.
+-- Si ya existe al menos un Administrador activo, la operación se aborta (RF-53).
+-- Las promociones posteriores deben realizarse mediante el módulo web (/Admin/Users).
 -- Requiere definir la variable @TargetEmail antes de su ejecución.
 -- ==============================================================================
 
 SET NOCOUNT ON;
 
 -- 1. Declarar correo objetivo (MODIFICAR SEGÚN EL USUARIO AUTORIZADO)
-DECLARE @TargetEmail NVARCHAR(256) = N''; -- Ingrese aquí el correo del usuario autorizado
+DECLARE @TargetEmail NVARCHAR(256) = N''; -- Ingrese aquí el correo del usuario autorizado para primer admin
 
 IF @TargetEmail IS NULL OR LTRIM(RTRIM(@TargetEmail)) = N''
 BEGIN
@@ -22,6 +24,21 @@ BEGIN
     RETURN;
 END;
 
+-- 2. Verificación de existencia de administradores activos previos (RF-52 / RF-53)
+DECLARE @ExistingAdminCount INT = (
+    SELECT COUNT(1)
+    FROM [dbo].[AspNetUserRoles] ur
+    INNER JOIN [dbo].[AspNetUsers] u ON ur.[UserId] = u.[Id]
+    WHERE ur.[RoleId] = @AdminRoleId AND u.[IsEnabled] = 1
+);
+
+IF @ExistingAdminCount > 0
+BEGIN
+    RAISERROR('ERROR RF-53: Ya existe al menos un Administrador activo en el sistema (%d encontrado(s)). La rutina de provisión D-10 es exclusiva para el primer Administrador (bootstrap inicial). Cualquier asignación de rol posterior debe realizarse exclusivamente a través del módulo web de Administración (/Admin/Users) por un administrador autenticado.', 16, 1, @ExistingAdminCount);
+    RETURN;
+END;
+
+-- 3. Verificación de precondiciones del usuario objetivo
 DECLARE @UserId NVARCHAR(128);
 DECLARE @EmailConfirmed BIT;
 DECLARE @IsEnabled BIT;
@@ -57,9 +74,11 @@ BEGIN
     RETURN;
 END;
 
-BEGIN TRANSACTION;
-TRY
-    -- Asignar rol
+-- 4. Ejecución transaccional atómica con manejo robusto de errores
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    -- Asignar rol Administrador
     INSERT INTO [dbo].[AspNetUserRoles] ([UserId], [RoleId]) VALUES (@UserId, @AdminRoleId);
 
     -- Actualizar SecurityStamp para revalidar sesiones
@@ -72,13 +91,14 @@ TRY
     ([UserId], [ActorEmail], [Category], [Action], [Success], [Details], [IpAddress], [TimestampUtc])
     VALUES 
     (@UserId, LOWER(@TargetEmail), 'Admin', 'ManualAdminProvisioning', 1, 
-     N'Provisión manual de rol Administrador ejecutada mediante script auditado D-10.', '127.0.0.1', SYSUTCDATETIME());
+     N'Provisión manual de primer Administrador ejecutada mediante script auditado D-10/RF-52.', '127.0.0.1', SYSUTCDATETIME());
 
     COMMIT TRANSACTION;
-    PRINT 'ÉXITO: Usuario ' + @TargetEmail + ' promovido satisfactoriamente a Administrador.';
+    PRINT 'ÉXITO: Usuario ' + @TargetEmail + ' aprovisionado satisfactoriamente como primer Administrador.';
 END TRY
 BEGIN CATCH
-    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    IF @@TRANCOUNT > 0 
+        ROLLBACK TRANSACTION;
     DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE();
     RAISERROR('Error durante la provisión: %s', 16, 1, @ErrMsg);
 END CATCH;

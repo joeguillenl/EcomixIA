@@ -1,9 +1,9 @@
 ﻿{
-    "TimestampUtc":  "2026-11-20T19:49:01.2553435Z",
+    "TimestampUtc":  "2026-11-20T20:23:17.1866056Z",
     "Environment":  "LocalDB (EcomixIA_Trial)",
-    "TotalPassed":  66,
+    "TotalPassed":  72,
     "TotalFailed":  0,
-    "DurationSeconds":  30.21,
+    "DurationSeconds":  46.67,
     "AllSuitesPassed":  true,
     "Suites":  [
                    {
@@ -11,7 +11,7 @@
                        "Script":  "01_Unit_Domain_Tests.ps1",
                        "Passed":  23,
                        "Failed":  0,
-                       "DurationSec":  1.17,
+                       "DurationSec":  1.37,
                        "Success":  true
                    },
                    {
@@ -19,15 +19,15 @@
                        "Script":  "02_Integration_EF6_Sql_Tests.ps1",
                        "Passed":  9,
                        "Failed":  0,
-                       "DurationSec":  2.85,
+                       "DurationSec":  4.48,
                        "Success":  true
                    },
                    {
-                       "Suite":  "Suite 03: HTTP \u0026 Authorization",
+                       "Suite":  "Suite 03: HTTP \u0026 Authorization Pipeline",
                        "Script":  "03_Http_Authorization_Tests.ps1",
-                       "Passed":  8,
+                       "Passed":  10,
                        "Failed":  0,
-                       "DurationSec":  4.34,
+                       "DurationSec":  2.69,
                        "Success":  true
                    },
                    {
@@ -35,15 +35,15 @@
                        "Script":  "04_FastApi_Contract_Mock_Tests.ps1",
                        "Passed":  10,
                        "Failed":  0,
-                       "DurationSec":  2.76,
+                       "DurationSec":  2.77,
                        "Success":  true
                    },
                    {
                        "Suite":  "Suite 05: Security \u0026 Concurrency",
                        "Script":  "05_Security_Concurrency_Tests.ps1",
-                       "Passed":  9,
+                       "Passed":  13,
                        "Failed":  0,
-                       "DurationSec":  13.38,
+                       "DurationSec":  28.26,
                        "Success":  true
                    },
                    {
@@ -51,7 +51,7 @@
                        "Script":  "06_Full_Regression_H01_H04.ps1",
                        "Passed":  7,
                        "Failed":  0,
-                       "DurationSec":  4.1,
+                       "DurationSec":  5.2,
                        "Success":  true
                    }
                ]

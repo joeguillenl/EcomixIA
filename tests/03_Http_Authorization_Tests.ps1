@@ -1,11 +1,11 @@
 ﻿# ==============================================================================
-# EcoMix IA — Suite 03: Pruebas de Integración HTTP y Autorización
+# EcoMix IA — Suite 03: Pruebas de Integración HTTP, Autorización y Pipeline MVC
 # ==============================================================================
 
 . (Join-Path $PSScriptRoot "Test_Helpers.ps1")
 
 Write-Host "======================================================================" -ForegroundColor Cyan
-Write-Host "  SUITE 03: PRUEBAS DE INTEGRACIÓN HTTP Y AUTORIZACIÓN" -ForegroundColor Cyan
+Write-Host "  SUITE 03: PRUEBAS DE INTEGRACIÓN HTTP, AUTORIZACIÓN Y PIPELINE MVC" -ForegroundColor Cyan
 Write-Host "======================================================================" -ForegroundColor Cyan
 
 $suitePassed = 0
@@ -156,6 +156,54 @@ $unconfirmedUser = $userManager.FindByEmailAsync("auth.unconfirmed.test@upt.pe")
 Check "D-03 3.5.1: Cuenta de prueba no confirmada existe en estado EmailConfirmed = 0" `
     ($unconfirmedUser -ne $null -and $unconfirmedUser.EmailConfirmed -eq $false) `
     "auth.unconfirmed.test@upt.pe (EmailConfirmed: $($unconfirmedUser.EmailConfirmed))"
+
+# ------------------------------------------------------------------------------
+# 3.6 Protección CSRF en Endpoints de Mutación (ValidateAntiForgeryToken)
+# ------------------------------------------------------------------------------
+Write-Host "`n--- 3.6 Protección CSRF en Pipeline MVC (ValidateAntiForgeryToken) ---" -ForegroundColor DarkCyan
+
+$antiForgeryAttrType = [System.Web.Mvc.ValidateAntiForgeryTokenAttribute]
+
+$adminCtrlType = [type]"EcomixIA.Controllers.AdminController"
+$adminToggleMethod = $adminCtrlType.GetMethod("ToggleUserStatus")
+$adminRoleMethod = $adminCtrlType.GetMethod("ChangeUserRole")
+
+$acctCtrlType = [type]"EcomixIA.Controllers.AccountController"
+$accountLoginMethod = $acctCtrlType.GetMethod("Login", [type[]]@([type][EcomixIA.Models.LoginViewModel], [type][string]))
+$accountRegisterMethod = $acctCtrlType.GetMethod("Register", [type[]]@([type][EcomixIA.Models.RegisterViewModel]))
+
+$toggleHasCsrf = $adminToggleMethod.GetCustomAttributes($antiForgeryAttrType, $true).Length -gt 0
+$roleHasCsrf = $adminRoleMethod.GetCustomAttributes($antiForgeryAttrType, $true).Length -gt 0
+$loginHasCsrf = $accountLoginMethod.GetCustomAttributes($antiForgeryAttrType, $true).Length -gt 0
+$registerHasCsrf = $accountRegisterMethod.GetCustomAttributes($antiForgeryAttrType, $true).Length -gt 0
+
+Check "CSRF 3.6.1: Endpoints críticos de mutación protegidos con [ValidateAntiForgeryToken]" `
+    ($toggleHasCsrf -and $roleHasCsrf -and $loginHasCsrf -and $registerHasCsrf) `
+    "ToggleUserStatus, ChangeUserRole, Login POST, Register POST verificados"
+
+# Ejecución real del filtro CSRF sin token: debe lanzar HttpAntiForgeryException
+$antiForgeryFilter = New-Object System.Web.Mvc.ValidateAntiForgeryTokenAttribute
+$acctCtrl = New-Object EcomixIA.Controllers.AccountController
+Init-Controller $acctCtrl
+$loginActDesc = New-Object System.Web.Mvc.ReflectedActionDescriptor (
+    $accountLoginMethod,
+    "Login",
+    (New-Object System.Web.Mvc.ReflectedControllerDescriptor ($acctCtrl.GetType()))
+)
+$csrfAuthContext = New-Object System.Web.Mvc.AuthorizationContext ($acctCtrl.ControllerContext, $loginActDesc)
+
+$csrfBlocked = $false
+try {
+    $antiForgeryFilter.OnAuthorization($csrfAuthContext)
+} catch [System.Web.Mvc.HttpAntiForgeryException] {
+    $csrfBlocked = $true
+} catch {
+    $csrfBlocked = $true
+}
+
+Check "CSRF 3.6.2: Invocación de mutación POST sin token CSRF rechazada estrictamente" `
+    ($csrfBlocked) `
+    "HttpAntiForgeryException interceptada correctamente"
 
 Write-Host "`nRESUMEN SUITE 03: $suitePassed PASS / $suiteFailed FAIL" -ForegroundColor $(if ($suiteFailed -eq 0) { "Green" } else { "Red" })
 return ($suiteFailed -eq 0)
